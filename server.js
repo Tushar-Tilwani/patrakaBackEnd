@@ -1,6 +1,7 @@
 var http = require('http'),
     express = require('express'),
     bodyParser = require('body-parser'),
+    cors = require('cors'),
     path = require('path'),
     MongoClient = require('mongodb').MongoClient,
     assert = require('assert'),
@@ -33,6 +34,12 @@ MongoClient.connect(url, function (err, db) {
 });
 
 app.use('/static', express.static(path.join(__dirname, 'public')));
+
+app.use(function (req, res) {
+    res.render('404', {url: req.url});
+});
+
+app.use(cors());
 
 app.get('/', function (req, res) {
     res.send('<html><body><h1>Hello World</h1></body></html>');
@@ -173,10 +180,6 @@ var deleteTicketBusinessRules = function (collection, entity, callback) {
         });
     }
 };
-
-app.use(function (req, res) {
-    res.render('404', {url: req.url});
-});
 
 http.createServer(app).listen(app.get('port'), function () {
     console.log('Express server listening on port ' + app.get('port'));

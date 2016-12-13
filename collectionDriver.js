@@ -105,23 +105,49 @@ CollectionDriver.prototype.batchInsert = function (collectionName, objects, call
 CollectionDriver.prototype.updateTickets = function (obj, callback) {
     var that = this;
     that.getCollection('showrel', function (error, the_collection) {
-        if (error) callback(error);
-        else {
-            the_collection.update({'_id': ObjectID(obj.showrelId)},
-                {$inc: {ticketAvailable: (0 - _.toInteger(obj.noOfTickets))}},
-                function (error, result) {
-                    if (error) callback(error);
-                    else if (result.result.ok) {
-                        that.save('tickets', obj, function (error, result) {
-                            if (error) callback(error);
-                            else {
-                                callback(null, result);
-                            }
-                        });
-                    }
-                });
+        if (error) {
+            return callback(error);
         }
+        bookTicketBusinessRules(the_collection, obj, function (error, result) {
+            if (error) {
+                return callback(error);
+            }
+            the_collection.update({'_id': ObjectID(obj.showrelId)}, {$inc: {ticketAvailable: (0 - _.toInteger(obj.noOfTickets))}},
+                function (error, result) {
+                    if (error || !_.get(result, ['result', 'ok'])) {
+                        return callback(error);
+                    }
+                    that.save('tickets', obj, function (error, result) {
+                        if (error) {
+                            return callback(error);
+                        }
+                        callback(null, result);
+                    });
+                });
+        });
+
     });
 };
+
+var bookTicketBusinessRules = function (collection, obj, callback) {
+    if (obj.showrelId) {
+        collection.findOne({'_id': ObjectID(obj.showrelId)}, function (error, doc) {
+            if (error) {
+                callback(error);
+            } else if ((doc.ticketAvailable - obj.noOfTickets) > 0) {
+                callback(null, doc);
+            } else {
+                callback({
+                    message: 'Only ' + doc.ticketAvailable + ' tickets available'
+                });
+            }
+        });
+    } else {
+        callback({
+            message: 'Server Error.'
+        });
+    }
+};
+
 
 exports.CollectionDriver = CollectionDriver;

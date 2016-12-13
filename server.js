@@ -124,13 +124,12 @@ app.post('/:token/showrel', function (req, res) {
     });
 });
 
-app.post('/:token/tickets', function (req, res) {
+app.post('/:token/booktickets', function (req, res) {
     var object = req.body || {};
 
     object.showrelId = '584e552b123c0b9a2f1f8b95';
     object.noOfTickets = 3;
 
-    console.log("tickets");
 
     collectionDriver.updateTickets(object, function (err, docs) {
         if (err) {

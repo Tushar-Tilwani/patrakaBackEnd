@@ -7,7 +7,8 @@ var http = require('http'),
     assert = require('assert'),
     CollectionDriver = require('./collectionDriver').CollectionDriver,
     _ = require('lodash'),
-    moment = require('moment');
+    moment = require('moment'),
+    Utils = require('./utils').Utils;
 
 var app = express();
 app.set('port', process.env.PORT || 3000);
@@ -17,8 +18,8 @@ app.set('view engine', 'jade');
 // this will let us get the data from a POST
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
-app.use(bodyParser.raw());
-app.use(bodyParser.text());
+//app.use(bodyParser.raw());
+//app.use(bodyParser.text());
 
 
 var mongoHost = 'localHost';
@@ -28,7 +29,6 @@ var mongoDb = 'patrakaDB';
 // Connection URL
 var url = 'mongodb://' + mongoHost + ':' + mongoPort + '/' + mongoDb;
 
-
 var collectionDriver;
 
 MongoClient.connect(url, function (err, db) {
@@ -37,22 +37,22 @@ MongoClient.connect(url, function (err, db) {
     collectionDriver = new CollectionDriver(db);
 });
 
-app.use('/:token/static', express.static(path.join(__dirname, 'public')));
+app.use('/static', express.static(path.join(__dirname, 'public')));
 
 app.use(cors());
 
-app.use('/:token/*', function (req, res, next) {
+app.use('/*', function (req, res, next) {
     var token = req.params.token;
     var token1 = req.query.token;
     console.log(token1);
     return next();
 });
 
-app.get('/:token', function (req, res) {
+app.get('', function (req, res) {
     res.send('<html><body><h1>Hello World</h1></body></html>');
 });
 
-app.get('/:token/:collection', function (req, res) {
+app.get('/:collection', function (req, res) {
     console.log('request');
     collectionDriver.findAll(req.params.collection, function (error, objs) { //C
         if (error) {
@@ -64,7 +64,7 @@ app.get('/:token/:collection', function (req, res) {
     });
 });
 
-app.get('/:token/:collection/:entity', function (req, res) {
+app.get('/:collection/:entity', function (req, res) {
     var params = req.params;
     var entity = params.entity;
     var collection = params.collection;
@@ -81,7 +81,23 @@ app.get('/:token/:collection/:entity', function (req, res) {
     }
 });
 
-app.post('/:token/showrel', function (req, res) {
+app.post('/location', function (req, res) {
+    var object = req.body;
+    object.jj = 'dd';
+    console.log(object.location);
+    var entity = '5853a44cc0166bd61dd42327';
+    var collection = 'vendors';
+    collectionDriver.get(collection, entity, function (error, objs) { //J
+        if (error) {
+            res.send(400, error);
+        } else {
+            console.log(objs.location);
+            res.send(200, {distance: Utils.getDistanceFromLatLonInKm(object.location.lat, object.location.lng, objs.location.lat, objs.location.lng)});
+        }
+    });
+});
+
+app.post('/showrel', function (req, res) {
     var resData = JSON.parse(req.body);
     var collection = 'showrel';
 
@@ -124,12 +140,11 @@ app.post('/:token/showrel', function (req, res) {
     });
 });
 
-app.post('/:token/booktickets', function (req, res) {
+app.post('/booktickets', function (req, res) {
     var object = req.body || {};
 
     object.showrelId = '584e552b123c0b9a2f1f8b95';
     object.noOfTickets = 3;
-
 
     collectionDriver.updateTickets(object, function (err, docs) {
         if (err) {
@@ -141,7 +156,7 @@ app.post('/:token/booktickets', function (req, res) {
 });
 
 
-app.post('/:token/:collection', function (req, res) {
+app.post('/:collection', function (req, res) {
     var object = req.body;
     var collection = req.params.collection;
     console.log(collection);
@@ -154,14 +169,14 @@ app.post('/:token/:collection', function (req, res) {
     });
 });
 
-app.put('/:token/testPUT', function (req, res) {
+app.put('/testPUT', function (req, res) {
     console.log(req.body);
     var f = req.body;
     console.log(f.dates);
     res.send(200, {'value': 'life is awesome in PUT'});
 });
 
-app.put('/:token/:collection/:entity', function (req, res) { //A
+app.put('/:collection/:entity', function (req, res) { //A
     console.log(JSON.stringify(req));
     var params = req.params;
     var entity = params.entity;
@@ -181,7 +196,7 @@ app.put('/:token/:collection/:entity', function (req, res) { //A
     }
 });
 
-app.delete('/:token/:collection/:entity', function (req, res) {
+app.delete('/:collection/:entity', function (req, res) {
     var params = req.params;
     var entity = params.entity;
     var collection = params.collection;
@@ -243,6 +258,7 @@ var deleteTicketBusinessRules = function (collection, entity, callback) {
         });
     }
 };
+
 
 app.use(function (req, res) {
     res.render('404', {url: req.url});

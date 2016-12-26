@@ -144,10 +144,38 @@ var bookTicketBusinessRules = function (collection, obj, callback) {
         });
     } else {
         callback({
-            message: 'Server Error.'
+            message: 'Bad Request',
+            status: '404'
         });
     }
 };
 
+
+CollectionDriver.prototype.getShowsById = function (obj, callback) {
+    var that = this;
+    that.getCollection('showrel', function (error, the_collection) {
+        if (error) {
+            return callback(error);
+        }
+        bookTicketBusinessRules(the_collection, obj, function (error, result) {
+            if (error) {
+                return callback(error);
+            }
+            the_collection.update({'_id': ObjectID(obj.showrelId)}, {$inc: {ticketAvailable: (0 - _.toInteger(obj.noOfTickets))}},
+                function (error, result) {
+                    if (error || !_.get(result, ['result', 'ok'])) {
+                        return callback(error);
+                    }
+                    that.save('tickets', obj, function (error, result) {
+                        if (error) {
+                            return callback(error);
+                        }
+                        callback(null, result);
+                    });
+                });
+        });
+
+    });
+};
 
 exports.CollectionDriver = CollectionDriver;

@@ -10,6 +10,7 @@
     "lodash": "^4.17.2",
     "moment": "^2.17.1",
     "mongodb": "^2.2.12",
-    "node-geolocation": "^1.15.14"
+    "node-geolocation": "^1.15.14",
+    "socket.io": "^1.7.2"
   }
 }

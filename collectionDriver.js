@@ -178,4 +178,100 @@ CollectionDriver.prototype.getShowsById = function (obj, callback) {
     });
 };
 
+//find a specific object
+CollectionDriver.prototype.findAllByIds = function (collectionName, ids, callback) {
+    this.getCollection(collectionName, function (error, the_collection) {
+        if (error) callback(error);
+        else {
+            var objIds = _.map(ids, function (id) {
+                return ObjectID(id);
+            }, {});
+
+            the_collection.find({'_id': {'$in': objIds}})
+                .toArray(function (error, results) {
+                    if (error) callback(error);
+                    else {
+                        callback(null, results);
+                    }
+                });
+        }
+    });
+};
+
+CollectionDriver.prototype.getShowsByVendor = function (vendorId, callback) {
+    var that = this;
+    that.get('vendors', vendorId, function (err, docs) {
+        if (err || _.isEmpty(docs)) {
+            callback(err);
+        }
+        that.findAllByIds('shows', docs.shows, function (err, docs) {
+            if (err) {
+                callback(err);
+            }
+            callback(null, docs);
+        });
+    });
+};
+
+
+CollectionDriver.prototype.getShowsByPattern = function (pattern, callback) {
+    var that = this;
+    that.getCollection('shows', function (error, the_collection) {
+        if (error) {
+            callback(error);
+        }
+        //console.log(pattern);
+        //db.shows.findOne({'fields.title': { '$regex' : /don.*/i }})
+        var regex = new RegExp(pattern + '.*');
+        var selection = {'fields.title': {'$regex': regex, '$options': 'i'}};
+        the_collection.find(selection, {}, {'limit': 10})
+            .toArray(function (error, results) {
+                if (error) callback(error);
+                else callback(null, results)
+            });
+    });
+};
+
+CollectionDriver.prototype.addShowToVendor = function (vendorId, showId, callback) {
+    var that = this;
+    this.getCollection('vendors', function (error, the_collection) {
+        if (error) callback(error);
+        else {
+            // db.students.update(
+            //     { _id: 1 },
+            //     { $push: { scores: 89 } }
+            // )
+            //console.log(pattern);
+            //db.shows.findOne({'fields.title': { '$regex' : /don.*/i }})
+            var selection = {'_id': ObjectID(vendorId)};
+            var push = {'$push': {'shows': showId}};
+            the_collection.update(selection, push, function (error, result) {
+                if (error) callback(error);
+                else callback(null, result);
+            });
+        }
+    });
+};
+
+CollectionDriver.prototype.removeShowFromVendor = function (vendorId, showId, callback) {
+    var that = this;
+    this.getCollection('vendors', function (error, the_collection) {
+        if (error) callback(error);
+        else {
+            // db.students.update(
+            //     { _id: 1 },
+            //     { $push: { scores: 89 } }
+            // )
+            //console.log(pattern);
+            //db.shows.findOne({'fields.title': { '$regex' : /don.*/i }})
+            var selection = {'_id': ObjectID(vendorId)};
+            var push = {'$pull': {'shows': showId}};
+            the_collection.update(selection, push, function (error, result) {
+                if (error) callback(error);
+                else callback(null, result);
+            });
+        }
+    });
+};
+
 exports.CollectionDriver = CollectionDriver;

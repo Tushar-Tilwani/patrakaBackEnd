@@ -42,14 +42,44 @@ app.use('/static', express.static(path.join(__dirname, 'public')));
 app.use(cors());
 
 app.use('/*', function (req, res, next) {
-    var token = req.params.token;
-    var token1 = req.query.token;
-    console.log(token1);
+    var token = req.query.token;
+    console.log(token);
     return next();
 });
 
+var sockets = {};
+
 app.get('', function (req, res) {
     res.send('<html><body><h1>Hello World</h1></body></html>');
+});
+
+
+app.get('/shows/filter/:pattern', function (req, res) {
+    var pattern = req.params.pattern;
+    if (pattern) {
+        collectionDriver.getShowsByPattern(pattern, function (error, objs) {
+            if (error) {
+                res.send(400, error);
+            }
+            res.send(200, objs);
+        });
+    } else {
+        res.send(400, {error: 'bad url', url: req.url});
+    }
+});
+
+app.get('/vendors/:vendorId/shows', function (req, res) {
+    var vendorId = req.params.vendorId;
+    if (vendorId) {
+        collectionDriver.getShowsByVendor(vendorId, function (error, objs) {
+            if (error) {
+                res.send(400, error);
+            }
+            res.send(200, objs);
+        });
+    } else {
+        res.send(400, {error: 'bad url', url: req.url});
+    }
 });
 
 app.get('/:collection', function (req, res) {
@@ -97,8 +127,15 @@ app.post('/location', function (req, res) {
     });
 });
 
+app.post('/location1', function (req, res) {
+    var object = req.body;
+    sockets[object.id].emit('pass', 'pass', function () {
+        res.send(200, {data: 'data'});
+    });
+});
+
 app.post('/showrel', function (req, res) {
-    var resData = JSON.parse(req.body);
+    var resData = req.body;
     var collection = 'showrel';
 
     /*var obj = {
@@ -111,15 +148,16 @@ app.post('/showrel', function (req, res) {
      ticketAvailable:<Integer>
      };*/
 
+    //console.log(resData);
+    //res.send(201, resData);
 
-    console.log(resData.showTimes.length);
 
     var objects = [];
 
-    _.times(_.toInteger(resData.noOfDays), function (i) {
-        _.forEach(resData.showTimes, function (minuteOfTheDay) {
+    _.times(_.toInteger(resData.noOfDays) + 1, function (i) {
+        _.forEach(resData.showsTimes, function (seconds) {
             objects.push({
-                date: moment(resData.startDate, 'MM-DD-YYYY').add(i, 'd').add(minuteOfTheDay, 'm').unix(),
+                date: moment(resData.startDate, 'MM-DD-YYYY').add(i, 'd').add(seconds, 's').unix(),
                 price: _.toNumber(resData.price),
                 showId: resData.showId,
                 vendorId: resData.vendorId,
@@ -128,8 +166,9 @@ app.post('/showrel', function (req, res) {
         });
     });
 
-    console.log(resData);
+    //console.log(resData.showsTimes);
 
+    //res.send(201, objects);
 
     collectionDriver.batchInsert(collection, objects, function (err, docs) {
         if (err) {
@@ -155,7 +194,6 @@ app.post('/booktickets', function (req, res) {
     });
 });
 
-
 app.post('/:collection', function (req, res) {
     var object = req.body;
     var collection = req.params.collection;
@@ -174,6 +212,25 @@ app.put('/testPUT', function (req, res) {
     var f = req.body;
     console.log(f.dates);
     res.send(200, {'value': 'life is awesome in PUT'});
+});
+
+app.put('/vendors/:vendorId/show/:showId', function (req, res) {
+    var showId = req.params.showId;
+    var vendorId = req.params.vendorId;
+
+    if (showId && vendorId) {
+        collectionDriver.addShowToVendor(vendorId, showId, function (error, objs) { //B
+            if (error) {
+                res.send(400, error);
+            }
+            else {
+                res.send(200, objs);
+            }
+        });
+    } else {
+        var error = {'message': 'error'};
+        res.send(400, error);
+    }
 });
 
 app.put('/:collection/:entity', function (req, res) { //A
@@ -230,6 +287,25 @@ app.delete('/:collection/:entity', function (req, res) {
     deleteTicketBusinessRules(collection, entity, callback);
 });
 
+app.delete('/vendors/:vendorId/show/:showId', function (req, res) {
+    var showId = req.params.showId;
+    var vendorId = req.params.vendorId;
+
+    if (showId && vendorId) {
+        collectionDriver.removeShowFromVendor(vendorId, showId, function (error, objs) { //B
+            if (error) {
+                res.send(400, error);
+            }
+            else {
+                res.send(200, objs);
+            }
+        });
+    } else {
+        var error = {'message': 'Cannot PUT a whole collection'};
+        res.send(400, error);
+    }
+});
+
 var deleteTicketBusinessRules = function (collection, entity, callback) {
     if (entity) {
         collectionDriver.get(collection, entity, function (error, objs) {
@@ -259,11 +335,30 @@ var deleteTicketBusinessRules = function (collection, entity, callback) {
     }
 };
 
-
 app.use(function (req, res) {
     res.render('404', {url: req.url});
 });
 
-http.createServer(app).listen(app.get('port'), function () {
+var server = http.createServer(app);
+
+var io = require('socket.io')(server);
+
+io.on('connection', function (socket) {
+    console.log(socket.handshake.query);
+    var query = socket.handshake.query;
+
+    sockets[query.id] = socket;
+
+    socket.on('save', function (data) {
+        console.log('data:' + data);
+    });
+
+    socket.emit('connId', query.id);
+    socket.on('msg', function (data) {
+        console.log('data:' + data);
+    });
+});
+
+server.listen(app.get('port'), function () {
     console.log('Express server listening on port ' + app.get('port'));
 });

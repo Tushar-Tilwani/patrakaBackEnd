@@ -222,6 +222,9 @@ CollectionDriver.prototype.getShowsByPattern = function (pattern, callback) {
         }
         //console.log(pattern);
         //db.shows.findOne({'fields.title': { '$regex' : /don.*/i }})
+        if (pattern === '*') {
+            pattern = '';
+        }
         var regex = new RegExp(pattern + '.*');
         var selection = {'fields.title': {'$regex': regex, '$options': 'i'}};
         the_collection.find(selection, {}, {'limit': 10})
@@ -255,7 +258,7 @@ CollectionDriver.prototype.addShowToVendor = function (vendorId, showId, callbac
 
 CollectionDriver.prototype.removeShowFromVendor = function (vendorId, showId, callback) {
     var that = this;
-    this.getCollection('vendors', function (error, the_collection) {
+    that.getCollection('vendors', function (error, the_collection) {
         if (error) callback(error);
         else {
             // db.students.update(
@@ -270,6 +273,29 @@ CollectionDriver.prototype.removeShowFromVendor = function (vendorId, showId, ca
                 if (error) callback(error);
                 else callback(null, result);
             });
+        }
+    });
+};
+
+CollectionDriver.prototype.getSortedShows = function (pattern, field, order, pageSize, callback) {
+    var that = this;
+    var sortBy = {};
+    field = 'fields.' + field;
+    sortBy[field] = order;
+    if (pattern === '*') {
+        pattern = '';
+    }
+    var regex = new RegExp(pattern + '.*');
+    var selection = {'fields.title': {'$regex': regex, '$options': 'i'}};
+
+    that.getCollection('shows', function (error, the_collection) {
+        if (error) callback(error);
+        else {
+            the_collection.find(selection, {}, {'limit': pageSize}).sort(sortBy)
+                .toArray(function (error, result) {
+                    if (error) callback(error);
+                    else callback(null, result);
+                });
         }
     });
 };

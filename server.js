@@ -30,6 +30,7 @@ var mongoDb = 'patrakaDB';
 var url = 'mongodb://' + mongoHost + ':' + mongoPort + '/' + mongoDb;
 
 var collectionDriver;
+var sockets = {};
 
 MongoClient.connect(url, function (err, db) {
     assert.equal(null, err);
@@ -47,12 +48,24 @@ app.use('/*', function (req, res, next) {
     return next();
 });
 
-var sockets = {};
-
 app.get('', function (req, res) {
     res.send('<html><body><h1>Hello World</h1></body></html>');
 });
 
+app.get('/shows/filter/:pattern/field/:field/order/:order/pageSize/:pageSize', function (req, res) {
+    var params = req.params;
+    var pageSize = _.toInteger(params.pageSize) || 10;
+    var order = params.order === 'asc' ? 1 : -1;
+    var field = params.field;
+    var pattern = params.pattern;
+    collectionDriver.getSortedShows(pattern, field, order, pageSize, function (error, objs) { //J
+        if (error) {
+            res.send(400, error);
+        } else {
+            res.send(200, objs);
+        }
+    });
+});
 
 app.get('/shows/filter/:pattern', function (req, res) {
     var pattern = req.params.pattern;

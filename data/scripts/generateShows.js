@@ -9,7 +9,7 @@ var vendorCollection = db.vendors,
 
 var showsTimes = [57600, 61200, 64800, 68400, 72000, 75600, 79200, 82800];
 var prices = [12.25, 15.50, 10.00, 17.00];
-var ticketAvilable = [45, 60, 90, 120, 150];
+var ticketsAvailable = [45, 60, 90, 120, 150];
 var theaterNumber = [1, 2, 3, 4, 5];
 
 var showCollection = db.shows;
@@ -39,7 +39,7 @@ function generateShows(movieId, vendorId) {
         noOfDays: 1,
         movieId: movieId,
         vendorId: vendorId,
-        ticketAvailable: ticketAvilable[_.random(ticketAvilable.length - 1)],
+        ticketsAvailable: ticketsAvailable[_.random(ticketsAvailable.length - 1)],
         theaterNumber: theaterNumber[_.random(theaterNumber.length - 1)]
     };
     //printjson(obj);
@@ -56,7 +56,7 @@ function generateShows(movieId, vendorId) {
                 price: _.toNumber(resData.price),
                 movieId: resData.movieId,
                 vendorId: resData.vendorId,
-                ticketAvailable: resData.ticketAvailable,
+                ticketsAvailable: resData.ticketsAvailable,
                 theaterNumber: resData.theaterNumber,
                 showTime: seconds
             });
@@ -90,7 +90,7 @@ movieCollection.find().limit(5).forEach(function (movie) {
  noOfDays: 150,
  showId:'584cd68821add78d38680300',
  vendorId:<String>,
- ticketAvailable:45
+ ticketsAvailable:45
  };
 
  var objects = [];
@@ -102,7 +102,7 @@ movieCollection.find().limit(5).forEach(function (movie) {
  price: _.toNumber(resData.price),
  showId: resData.showId,
  vendorId: resData.vendorId,
- ticketAvailable: resData.ticketAvailable
+ ticketsAvailable: resData.ticketsAvailable
  });
  });
  });

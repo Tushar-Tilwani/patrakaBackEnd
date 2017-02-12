@@ -213,6 +213,22 @@ CollectionDriver.prototype.getShowsByVendor = function (vendorId, callback) {
     });
 };
 
+CollectionDriver.prototype.getVendorsByShow = function (showId, callback) {
+    //db.vendors.find({shows:{$elemMatch:{$eq:ObjectId('584cd68821add78d38680f1f')}}})
+    var that = this;
+    that.getCollection('vendors', function (error, the_collection) {
+        if (error) callback(error);
+        else {
+            the_collection.find({'shows': {'$elemMatch': {'$eq': ObjectID(showId)}}})
+                .toArray(function (err, docs) {
+                    if (err) {
+                        callback(err);
+                    }
+                    callback(null, docs);
+                });
+        }
+    });
+};
 
 CollectionDriver.prototype.getShowsByPattern = function (pattern, callback) {
     var that = this;

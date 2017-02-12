@@ -95,6 +95,20 @@ app.get('/vendors/:vendorId/shows', function (req, res) {
     }
 });
 
+app.get('/shows/:showId/vendors', function (req, res) {
+    var showId = req.params.showId;
+    if (showId) {
+        collectionDriver.getVendorsByShow(showId, function (error, objs) {
+            if (error) {
+                res.send(400, error);
+            }
+            res.send(200, objs);
+        });
+    } else {
+        res.send(400, {error: 'bad url', url: req.url});
+    }
+});
+
 app.get('/:collection', function (req, res) {
     console.log('request');
     collectionDriver.findAll(req.params.collection, function (error, objs) { //C

@@ -52,13 +52,13 @@ app.get('', function (req, res) {
     res.send('<html><body><h1>Hello World</h1></body></html>');
 });
 
-app.get('/shows/filter/:pattern/field/:field/order/:order/pageSize/:pageSize', function (req, res) {
+app.get('/movies/filter/:pattern/field/:field/order/:order/pageSize/:pageSize', function (req, res) {
     var params = req.params;
     var pageSize = _.toInteger(params.pageSize) || 10;
     var order = params.order === 'asc' ? 1 : -1;
     var field = params.field;
     var pattern = params.pattern;
-    collectionDriver.getSortedShows(pattern, field, order, pageSize, function (error, objs) { //J
+    collectionDriver.getSortedMovies(pattern, field, order, pageSize, function (error, objs) { //J
         if (error) {
             res.send(400, error);
         } else {
@@ -67,10 +67,24 @@ app.get('/shows/filter/:pattern/field/:field/order/:order/pageSize/:pageSize', f
     });
 });
 
-app.get('/shows/filter/:pattern', function (req, res) {
+app.get('/movies/filter/:pattern', function (req, res) {
     var pattern = req.params.pattern;
     if (pattern) {
-        collectionDriver.getShowsByPattern(pattern, function (error, objs) {
+        collectionDriver.getMoviesByPattern(pattern, function (error, objs) {
+            if (error) {
+                res.send(400, error);
+            }
+            res.send(200, objs);
+        });
+    } else {
+        res.send(400, {error: 'bad url', url: req.url});
+    }
+});
+
+app.get('/vendors/:vendorId/movies', function (req, res) {
+    var vendorId = req.params.vendorId;
+    if (vendorId) {
+        collectionDriver.getMoviesByVendor(vendorId, function (error, objs) {
             if (error) {
                 res.send(400, error);
             }
@@ -95,10 +109,25 @@ app.get('/vendors/:vendorId/shows', function (req, res) {
     }
 });
 
-app.get('/shows/:showId/vendors', function (req, res) {
-    var showId = req.params.showId;
-    if (showId) {
-        collectionDriver.getVendorsByShow(showId, function (error, objs) {
+app.get('/vendors/:vendorId/movies/:movieId/shows', function (req, res) {
+    var vendorId = req.params.vendorId;
+    var movieId = req.params.movieId;
+    if (vendorId) {
+        collectionDriver.getShowsByVendorAndMovie(vendorId, movieId, function (error, objs) {
+            if (error) {
+                res.send(400, error);
+            }
+            res.send(200, objs);
+        });
+    } else {
+        res.send(400, {error: 'bad url', url: req.url});
+    }
+});
+
+app.get('/movies/:movieId/vendors', function (req, res) {
+    var movieId = req.params.movieId;
+    if (movieId) {
+        collectionDriver.getVendorsByMovie(movieId, function (error, objs) {
             if (error) {
                 res.send(400, error);
             }
@@ -161,16 +190,16 @@ app.post('/location1', function (req, res) {
     });
 });
 
-app.post('/showrel', function (req, res) {
+app.post('/shows', function (req, res) {
     var resData = req.body;
-    var collection = 'showrel';
+    var collection = 'shows';
 
     /*var obj = {
-     showsTimes: <Array<Integer>> Secs,
+     moviesTimes: <Array<Integer>> Secs,
      price: <Float>,
      startDate: <Date>,'12-25-1995'
      noOfDays: Integer,
-     showId:<String>,
+     movieId:<String>,
      vendorId:<String>,
      ticketAvailable:<Integer>
      };*/
@@ -182,18 +211,18 @@ app.post('/showrel', function (req, res) {
     var objects = [];
 
     _.times(_.toInteger(resData.noOfDays) + 1, function (i) {
-        _.forEach(resData.showsTimes, function (seconds) {
+        _.forEach(resData.moviesTimes, function (seconds) {
             objects.push({
                 date: moment(resData.startDate, 'MM-DD-YYYY').add(i, 'd').add(seconds, 's').unix(),
                 price: _.toNumber(resData.price),
-                showId: resData.showId,
+                movieId: resData.movieId,
                 vendorId: resData.vendorId,
                 ticketAvailable: resData.ticketAvailable
             });
         });
     });
 
-    //console.log(resData.showsTimes);
+    //console.log(resData.moviesTimes);
 
     //res.send(201, objects);
 
@@ -209,7 +238,7 @@ app.post('/showrel', function (req, res) {
 app.post('/booktickets', function (req, res) {
     var object = req.body || {};
 
-    object.showrelId = '584e552b123c0b9a2f1f8b95';
+    object.showsId = '584e552b123c0b9a2f1f8b95';
     object.noOfTickets = 3;
 
     collectionDriver.updateTickets(object, function (err, docs) {
@@ -241,12 +270,12 @@ app.put('/testPUT', function (req, res) {
     res.send(200, {'value': 'life is awesome in PUT'});
 });
 
-app.put('/vendors/:vendorId/show/:showId', function (req, res) {
-    var showId = req.params.showId;
+app.put('/vendors/:vendorId/movie/:movieId', function (req, res) {
+    var movieId = req.params.movieId;
     var vendorId = req.params.vendorId;
 
-    if (showId && vendorId) {
-        collectionDriver.addShowToVendor(vendorId, showId, function (error, objs) { //B
+    if (movieId && vendorId) {
+        collectionDriver.addMovieToVendor(vendorId, movieId, function (error, objs) { //B
             if (error) {
                 res.send(400, error);
             }
@@ -314,12 +343,12 @@ app.delete('/:collection/:entity', function (req, res) {
     deleteTicketBusinessRules(collection, entity, callback);
 });
 
-app.delete('/vendors/:vendorId/show/:showId', function (req, res) {
-    var showId = req.params.showId;
+app.delete('/vendors/:vendorId/movie/:movieId', function (req, res) {
+    var movieId = req.params.movieId;
     var vendorId = req.params.vendorId;
 
-    if (showId && vendorId) {
-        collectionDriver.removeShowFromVendor(vendorId, showId, function (error, objs) { //B
+    if (movieId && vendorId) {
+        collectionDriver.removeMovieFromVendor(vendorId, movieId, function (error, objs) { //B
             if (error) {
                 res.send(400, error);
             }

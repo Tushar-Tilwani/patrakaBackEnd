@@ -93,7 +93,7 @@ CollectionDriver.prototype.batchInsert = function (collectionName, objects, call
                 batch.insert(obj);
             });
 
-            batch.execute(function (err, doc) {
+            batch.execute(function (error, doc) {
                 if (error) callback(error);
                 else callback(null, doc);
             });
@@ -104,7 +104,7 @@ CollectionDriver.prototype.batchInsert = function (collectionName, objects, call
 
 CollectionDriver.prototype.updateTickets = function (obj, callback) {
     var that = this;
-    that.getCollection('showrel', function (error, the_collection) {
+    that.getCollection('shows', function (error, the_collection) {
         if (error) {
             return callback(error);
         }
@@ -112,7 +112,7 @@ CollectionDriver.prototype.updateTickets = function (obj, callback) {
             if (error) {
                 return callback(error);
             }
-            the_collection.update({'_id': ObjectID(obj.showrelId)}, {$inc: {ticketAvailable: (0 - _.toInteger(obj.noOfTickets))}},
+            the_collection.update({'_id': ObjectID(obj.showId)}, {$inc: {ticketAvailable: (0 - _.toInteger(obj.noOfTickets))}},
                 function (error, result) {
                     if (error || !_.get(result, ['result', 'ok'])) {
                         return callback(error);
@@ -130,8 +130,8 @@ CollectionDriver.prototype.updateTickets = function (obj, callback) {
 };
 
 var bookTicketBusinessRules = function (collection, obj, callback) {
-    if (obj.showrelId) {
-        collection.findOne({'_id': ObjectID(obj.showrelId)}, function (error, doc) {
+    if (obj.showId) {
+        collection.findOne({'_id': ObjectID(obj.showId)}, function (error, doc) {
             if (error) {
                 callback(error);
             } else if ((doc.ticketAvailable - obj.noOfTickets) > 0) {
@@ -151,9 +151,9 @@ var bookTicketBusinessRules = function (collection, obj, callback) {
 };
 
 
-CollectionDriver.prototype.getShowsById = function (obj, callback) {
+CollectionDriver.prototype.getMoviesById = function (obj, callback) {
     var that = this;
-    that.getCollection('showrel', function (error, the_collection) {
+    that.getCollection('shows', function (error, the_collection) {
         if (error) {
             return callback(error);
         }
@@ -161,7 +161,7 @@ CollectionDriver.prototype.getShowsById = function (obj, callback) {
             if (error) {
                 return callback(error);
             }
-            the_collection.update({'_id': ObjectID(obj.showrelId)}, {$inc: {ticketAvailable: (0 - _.toInteger(obj.noOfTickets))}},
+            the_collection.update({'_id': ObjectID(obj.showId)}, {$inc: {ticketAvailable: (0 - _.toInteger(obj.noOfTickets))}},
                 function (error, result) {
                     if (error || !_.get(result, ['result', 'ok'])) {
                         return callback(error);
@@ -198,46 +198,95 @@ CollectionDriver.prototype.findAllByIds = function (collectionName, ids, callbac
     });
 };
 
+CollectionDriver.prototype.getMoviesByVendor = function (vendorId, callback) {
+    var that = this;
+    that.getShowsByVendor(vendorId, function (error, shows) {
+        if (error) callback(error);
+        else {
+            var movieIds = _.keys(_.groupBy(shows, 'movieId'));
+            that.findAllByIds('movies', movieIds, function (error, docs) {
+                if (error) {
+                    callback(error);
+                }
+                callback(null, docs);
+            });
+        }
+    });
+
+
+};
+
+
 CollectionDriver.prototype.getShowsByVendor = function (vendorId, callback) {
     var that = this;
-    that.get('vendors', vendorId, function (err, docs) {
-        if (err || _.isEmpty(docs)) {
-            callback(err);
-        }
-        that.findAllByIds('shows', docs.shows, function (err, docs) {
-            if (err) {
-                callback(err);
+    that.getCollection('shows', function (error, the_collection) {
+        if (error) callback(error);
+        the_collection.find({'vendorId': ObjectID(vendorId)})
+            .toArray(function (error, results) {
+                if (error) callback(error);
+                else {
+                    callback(null, results);
+                }
+            });
+    });
+};
+
+
+CollectionDriver.prototype.getShowsByMovie = function (movieId, callback) {
+    var that = this;
+    that.getCollection('shows', function (error, the_collection) {
+        if (error) callback(error);
+        the_collection.find({'movieId': ObjectID(movieId)})
+            .toArray(function (error, results) {
+                if (error) callback(error);
+                else {
+                    callback(null, results);
+                }
+            });
+    });
+};
+
+CollectionDriver.prototype.getShowsByVendorAndMovie = function (vendorId, movieId, callback) {
+    var that = this;
+    that.getCollection('shows', function (error, the_collection) {
+        if (error) callback(error);
+        the_collection.find({
+            'vendorId': ObjectID(vendorId),
+            'movieId': ObjectID(movieId)
+        }).toArray(function (error, results) {
+            if (error) callback(error);
+            else {
+                callback(null, results);
             }
-            callback(null, docs);
         });
     });
 };
 
-CollectionDriver.prototype.getVendorsByShow = function (showId, callback) {
-    //db.vendors.find({shows:{$elemMatch:{$eq:ObjectId('584cd68821add78d38680f1f')}}})
+
+CollectionDriver.prototype.getVendorsByMovie = function (movieId, callback) {
     var that = this;
-    that.getCollection('vendors', function (error, the_collection) {
+    that.getShowsByMovie(movieId, function (error, shows) {
         if (error) callback(error);
         else {
-            the_collection.find({'shows': {'$elemMatch': {'$eq': ObjectID(showId)}}})
-                .toArray(function (err, docs) {
-                    if (err) {
-                        callback(err);
-                    }
-                    callback(null, docs);
-                });
+            var vendorIds = _.keys(_.groupBy(shows, 'vendorId'));
+            that.findAllByIds('vendors', vendorIds, function (error, docs) {
+                if (error) {
+                    callback(error);
+                }
+                callback(null, docs);
+            });
         }
     });
 };
 
-CollectionDriver.prototype.getShowsByPattern = function (pattern, callback) {
+CollectionDriver.prototype.getMoviesByPattern = function (pattern, callback) {
     var that = this;
-    that.getCollection('shows', function (error, the_collection) {
+    that.getCollection('movies', function (error, the_collection) {
         if (error) {
             callback(error);
         }
         //console.log(pattern);
-        //db.shows.findOne({'fields.title': { '$regex' : /don.*/i }})
+        //db.movies.findOne({'fields.title': { '$regex' : /don.*/i }})
         if (pattern === '*') {
             pattern = '';
         }
@@ -251,7 +300,7 @@ CollectionDriver.prototype.getShowsByPattern = function (pattern, callback) {
     });
 };
 
-CollectionDriver.prototype.addShowToVendor = function (vendorId, showId, callback) {
+CollectionDriver.prototype.addMovieToVendor = function (vendorId, movieId, callback) {
     var that = this;
     this.getCollection('vendors', function (error, the_collection) {
         if (error) callback(error);
@@ -261,9 +310,9 @@ CollectionDriver.prototype.addShowToVendor = function (vendorId, showId, callbac
             //     { $push: { scores: 89 } }
             // )
             //console.log(pattern);
-            //db.shows.findOne({'fields.title': { '$regex' : /don.*/i }})
+            //db.movies.findOne({'fields.title': { '$regex' : /don.*/i }})
             var selection = {'_id': ObjectID(vendorId)};
-            var push = {'$push': {'shows': showId}};
+            var push = {'$push': {'movies': movieId}};
             the_collection.update(selection, push, function (error, result) {
                 if (error) callback(error);
                 else callback(null, result);
@@ -272,7 +321,7 @@ CollectionDriver.prototype.addShowToVendor = function (vendorId, showId, callbac
     });
 };
 
-CollectionDriver.prototype.removeShowFromVendor = function (vendorId, showId, callback) {
+CollectionDriver.prototype.removeMovieFromVendor = function (vendorId, movieId, callback) {
     var that = this;
     that.getCollection('vendors', function (error, the_collection) {
         if (error) callback(error);
@@ -282,9 +331,9 @@ CollectionDriver.prototype.removeShowFromVendor = function (vendorId, showId, ca
             //     { $push: { scores: 89 } }
             // )
             //console.log(pattern);
-            //db.shows.findOne({'fields.title': { '$regex' : /don.*/i }})
+            //db.movies.findOne({'fields.title': { '$regex' : /don.*/i }})
             var selection = {'_id': ObjectID(vendorId)};
-            var push = {'$pull': {'shows': showId}};
+            var push = {'$pull': {'movies': movieId}};
             the_collection.update(selection, push, function (error, result) {
                 if (error) callback(error);
                 else callback(null, result);
@@ -293,7 +342,7 @@ CollectionDriver.prototype.removeShowFromVendor = function (vendorId, showId, ca
     });
 };
 
-CollectionDriver.prototype.getSortedShows = function (pattern, field, order, pageSize, callback) {
+CollectionDriver.prototype.getSortedMovies = function (pattern, field, order, pageSize, callback) {
     var that = this;
     var sortBy = {};
     field = 'fields.' + field;
@@ -304,7 +353,7 @@ CollectionDriver.prototype.getSortedShows = function (pattern, field, order, pag
     var regex = new RegExp(pattern + '.*');
     var selection = {'fields.title': {'$regex': regex, '$options': 'i'}};
 
-    that.getCollection('shows', function (error, the_collection) {
+    that.getCollection('movies', function (error, the_collection) {
         if (error) callback(error);
         else {
             the_collection.find(selection, {}, {'limit': pageSize}).sort(sortBy)

@@ -275,17 +275,20 @@ app.post('/tickets', function (req, res) {
     });
 });
 
-app.post('/booktickets', function (req, res) {
-    var object = req.body || {};
+app.post('/useTicket/:ticketId', function (req, res) {
+    var ticketId = req.params.ticketId;
 
-    object.showsId = '584e552b123c0b9a2f1f8b95';
-    object.noOfTickets = 3;
-
-    collectionDriver.updateTickets(object, function (err, docs) {
+    collectionDriver.get('tickets', ticketId, function (err, doc) {
         if (err) {
             res.send(400, err);
         } else {
-            res.send(201, docs);
+            var socket = sockets[doc.vendorId];
+            if (!socket) {
+                res.send(400, {message: 'Vendor not present!'});
+            } else {
+                sockets[doc.vendorId].emit('validate', doc);
+                res.send(201, doc);
+            }
         }
     });
 });

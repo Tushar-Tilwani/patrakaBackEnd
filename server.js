@@ -138,6 +138,35 @@ app.get('/movies/:movieId/vendors', function (req, res) {
     }
 });
 
+
+app.get('/tickets/:ticketId', function (req, res) {
+    var ticketId = req.params.ticketId;
+    if (ticketId) {
+        collectionDriver.getTicketById(ticketId, function (error, objs) {
+            if (error) {
+                res.send(400, error);
+            }
+            res.send(200, objs);
+        });
+    } else {
+        res.send(400, {error: 'bad url', url: req.url});
+    }
+});
+
+app.get('/tickets/user/:userId', function (req, res) {
+    var userId = req.params.userId;
+    if (userId) {
+        collectionDriver.getTicketsByUserId(userId, function (error, objs) {
+            if (error) {
+                res.send(400, error);
+            }
+            res.send(200, objs);
+        });
+    } else {
+        res.send(400, {error: 'bad url', url: req.url});
+    }
+});
+
 app.get('/:collection', function (req, res) {
     console.log('request');
     collectionDriver.findAll(req.params.collection, function (error, objs) { //C
@@ -227,6 +256,17 @@ app.post('/shows', function (req, res) {
     //res.send(201, objects);
 
     collectionDriver.batchInsert(collection, objects, function (err, docs) {
+        if (err) {
+            res.send(400, err);
+        } else {
+            res.send(201, docs);
+        }
+    });
+});
+
+app.post('/tickets', function (req, res) {
+    var object = req.body;
+    collectionDriver.createTickets(object, function (err, docs) {
         if (err) {
             res.send(400, err);
         } else {

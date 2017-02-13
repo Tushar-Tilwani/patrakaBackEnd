@@ -1,5 +1,6 @@
 var ObjectID = require('mongodb').ObjectID,
-    _ = require('lodash');
+    _ = require('lodash'),
+    Join = require('mongo-join').Join;
 
 CollectionDriver = function (db) {
     this.db = db;
@@ -102,22 +103,22 @@ CollectionDriver.prototype.batchInsert = function (collectionName, objects, call
 };
 
 
-CollectionDriver.prototype.updateTickets = function (obj, callback) {
+CollectionDriver.prototype.createTickets = function (ticketObj, callback) {
     var that = this;
     that.getCollection('shows', function (error, the_collection) {
         if (error) {
             return callback(error);
         }
-        bookTicketBusinessRules(the_collection, obj, function (error, result) {
+        bookTicketBusinessRules(the_collection, ticketObj, function (error, result) {
             if (error) {
                 return callback(error);
             }
-            the_collection.update({'_id': ObjectID(obj.showId)}, {$inc: {ticketAvailable: (0 - _.toInteger(obj.noOfTickets))}},
+            the_collection.update({'_id': ObjectID(ticketObj.showId)}, {$inc: {ticketsAvailable: (0 - _.toInteger(ticketObj.count))}},
                 function (error, result) {
                     if (error || !_.get(result, ['result', 'ok'])) {
                         return callback(error);
                     }
-                    that.save('tickets', obj, function (error, result) {
+                    that.save('tickets', ticketObj, function (error, result) {
                         if (error) {
                             return callback(error);
                         }
@@ -129,16 +130,16 @@ CollectionDriver.prototype.updateTickets = function (obj, callback) {
     });
 };
 
-var bookTicketBusinessRules = function (collection, obj, callback) {
-    if (obj.showId) {
-        collection.findOne({'_id': ObjectID(obj.showId)}, function (error, doc) {
+var bookTicketBusinessRules = function (collection, ticketObj, callback) {
+    if (ticketObj.showId) {
+        collection.findOne({'_id': ObjectID(ticketObj.showId)}, function (error, doc) {
             if (error) {
                 callback(error);
-            } else if ((doc.ticketAvailable - obj.noOfTickets) > 0) {
+            } else if ((doc.ticketsAvailable - ticketObj.count) > 0) {
                 callback(null, doc);
             } else {
                 callback({
-                    message: 'Only ' + doc.ticketAvailable + ' tickets available'
+                    message: 'Only ' + doc.ticketsAvailable + ' tickets available'
                 });
             }
         });
@@ -150,33 +151,48 @@ var bookTicketBusinessRules = function (collection, obj, callback) {
     }
 };
 
+// CollectionDriver.prototype.getTicketsByUserId = function (userId, callback) {
+//     var selection = {'userId': userId};
+//     var that = this;
+//     that.getCollection('tickets', function (error, the_collection) {
+//         if (error) callback(error);
+//         else {
+//             the_collection.find(selection, {}, {'limit': 100}).sort({'date': 1})
+//                 .toArray(function (error, results) {
+//                     if (error) callback(error);
+//                     else callback(null, results);
+//                 });
+//         }
+//     });
+// };
 
-CollectionDriver.prototype.getMoviesById = function (obj, callback) {
-    var that = this;
-    that.getCollection('shows', function (error, the_collection) {
-        if (error) {
-            return callback(error);
-        }
-        bookTicketBusinessRules(the_collection, obj, function (error, result) {
-            if (error) {
-                return callback(error);
-            }
-            the_collection.update({'_id': ObjectID(obj.showId)}, {$inc: {ticketAvailable: (0 - _.toInteger(obj.noOfTickets))}},
-                function (error, result) {
-                    if (error || !_.get(result, ['result', 'ok'])) {
-                        return callback(error);
-                    }
-                    that.save('tickets', obj, function (error, result) {
-                        if (error) {
-                            return callback(error);
-                        }
-                        callback(null, result);
-                    });
-                });
-        });
 
-    });
-};
+// CollectionDriver.prototype.getMoviesById = function (obj, callback) {
+//     var that = this;
+//     that.getCollection('shows', function (error, the_collection) {
+//         if (error) {
+//             return callback(error);
+//         }
+//         bookTicketBusinessRules(the_collection, obj, function (error, result) {
+//             if (error) {
+//                 return callback(error);
+//             }
+//             the_collection.update({'_id': ObjectID(obj.showId)}, {$inc: {ticketsAvailable: (0 - _.toInteger(obj.count))}},
+//                 function (error, result) {
+//                     if (error || !_.get(result, ['result', 'ok'])) {
+//                         return callback(error);
+//                     }
+//                     that.save('tickets', obj, function (error, result) {
+//                         if (error) {
+//                             return callback(error);
+//                         }
+//                         callback(null, result);
+//                     });
+//                 });
+//         });
+//
+//     });
+// };
 
 //find a specific object
 CollectionDriver.prototype.findAllByIds = function (collectionName, ids, callback) {
@@ -364,5 +380,51 @@ CollectionDriver.prototype.getSortedMovies = function (pattern, field, order, pa
         }
     });
 };
+
+CollectionDriver.prototype.getTicketsByUserId = function ticketsJoin(userId, callback) {
+    var selection = {'userId': userId};
+    this.getTickets(selection, callback);
+
+};
+
+CollectionDriver.prototype.getTicketById = function ticketsJoin(ticketId, callback) {
+
+    var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
+    if (!checkForHexRegExp.test(ticketId)) callback({error: "invalid id"});
+    var selection = {'_id': ObjectID(ticketId)};
+    this.getTickets(selection, function (err, docs) {
+        if (err) {
+            callback(err, null);
+        } else {
+            callback(null, _.head(docs) || '');
+        }
+    });
+};
+
+
+CollectionDriver.prototype.getTickets = function (selection, callback) {
+    var that = this;
+    that.getCollection('tickets', function (error, the_collection) {
+        if (error) callback(error);
+        the_collection.find(selection, function (err, cursor) {
+            var join = new Join(that.db)
+                .on({
+                    field: 'vendorId',
+                    as: 'vendor',
+                    to: '_id',
+                    from: 'vendors'
+                }).on({
+                    field: 'movieId',
+                    as: 'movie',
+                    to: '_id',
+                    from: 'movies'
+                });
+            join.toArray(cursor, function (err, joinedDocs) {
+                callback(err, _.sortBy(joinedDocs, 'date'));
+            });
+        });
+    });
+}
+
 
 exports.CollectionDriver = CollectionDriver;

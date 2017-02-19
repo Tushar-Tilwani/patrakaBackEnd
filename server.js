@@ -138,7 +138,6 @@ app.get('/movies/:movieId/vendors', function (req, res) {
     }
 });
 
-
 app.get('/tickets/:ticketId', function (req, res) {
     var ticketId = req.params.ticketId;
     if (ticketId) {
@@ -196,28 +195,28 @@ app.get('/:collection/:entity', function (req, res) {
     }
 });
 
-app.post('/location', function (req, res) {
-    var object = req.body;
-    object.jj = 'dd';
-    console.log(object.location);
-    var entity = '5853a44cc0166bd61dd42327';
-    var collection = 'vendors';
-    collectionDriver.get(collection, entity, function (error, objs) { //J
-        if (error) {
-            res.send(400, error);
-        } else {
-            console.log(objs.location);
-            res.send(200, {distance: Utils.getDistanceFromLatLonInKm(object.location.lat, object.location.lng, objs.location.lat, objs.location.lng)});
-        }
-    });
-});
-
-app.post('/location1', function (req, res) {
-    var object = req.body;
-    sockets[object.id].emit('pass', 'pass', function () {
-        res.send(200, {data: 'data'});
-    });
-});
+// app.post('/location', function (req, res) {
+//     var object = req.body;
+//     object.jj = 'dd';
+//     console.log(object.location);
+//     var entity = '5853a44cc0166bd61dd42327';
+//     var collection = 'vendors';
+//     collectionDriver.get(collection, entity, function (error, objs) { //J
+//         if (error) {
+//             res.send(400, error);
+//         } else {
+//             console.log(objs.location);
+//             res.send(200, {distance: Utils.getDistanceFromLatLonInKm(object.location.lat, object.location.lng, objs.location.lat, objs.location.lng)});
+//         }
+//     });
+// });
+//
+// app.post('/location1', function (req, res) {
+//     var object = req.body;
+//     sockets[object.id].emit('pass', 'pass', function () {
+//         res.send(200, {data: 'data'});
+//     });
+// });
 
 app.post('/shows', function (req, res) {
     var resData = req.body;
@@ -275,19 +274,24 @@ app.post('/tickets', function (req, res) {
     });
 });
 
+var currentResponse;
 app.post('/useTicket/:ticketId', function (req, res) {
     var ticketId = req.params.ticketId;
+    currentResponse = res;
+    function sendRes(flag) {
+        return flag ? currentResponse.send(201, {flag: true}) : currentResponse.send(400, {message: 'Please see an agent.'});
+    }
 
-    collectionDriver.get('tickets', ticketId, function (err, doc) {
+    collectionDriver.getTicketById(ticketId, function (err, doc) {
         if (err) {
             res.send(400, err);
         } else {
             var socket = sockets[doc.vendorId];
             if (!socket) {
-                res.send(400, {message: 'Vendor not present!'});
+                res.send(400, {message: 'Vendor not present.'});
             } else {
                 sockets[doc.vendorId].emit('validate', doc);
-                res.send(201, doc);
+
             }
         }
     });
@@ -447,15 +451,38 @@ io.on('connection', function (socket) {
     var query = socket.handshake.query;
 
     sockets[query.id] = socket;
-
-    socket.on('save', function (data) {
-        console.log('data:' + data);
-    });
-
     socket.emit('connId', query.id);
-    socket.on('msg', function (data) {
-        console.log('data:' + data);
+
+    socket.on('validateTicket', function (data) {
+        console.log(data);
+        var ticketId = data.ticketId;
+        collectionDriver.getTicketById(ticketId, function (err, doc) {
+            //console.log(doc);
+            if (err) {
+                socket.emit('validatedTicketResult', {flag: false, message: 'Invalid Ticket!'});
+            } else {
+                var vendorSocket = sockets[doc.vendorId];
+                console.log(vendorSocket && vendorSocket.connected);
+                if (vendorSocket && vendorSocket.connected) {
+                    vendorSocket.emit('validateTicket', _.assignIn(doc, data));
+                } else {
+                    socket.emit('validatedTicketResult', {flag: false, message: 'Vendor not present.'});
+                }
+            }
+        });
     });
+
+    socket.on('validatedTicketResult', function (result) {
+        //console.log(result);
+        sockets[result.userId].emit('validatedTicketResult', result);
+    });
+
+    socket.on('end', function (id) {
+        socket.disconnect();
+        sockets[id] = null;
+    });
+
+
 });
 
 server.listen(app.get('port'), function () {

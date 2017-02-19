@@ -381,18 +381,18 @@ CollectionDriver.prototype.getSortedMovies = function (pattern, field, order, pa
     });
 };
 
-CollectionDriver.prototype.getTicketsByUserId = function ticketsJoin(userId, callback) {
+CollectionDriver.prototype.getTicketsByUserId = function (userId, callback) {
     var selection = {'userId': userId};
-    this.getTickets(selection, callback);
+    this.getTickets(selection, false, callback);
 
 };
 
-CollectionDriver.prototype.getTicketById = function ticketsJoin(ticketId, callback) {
+CollectionDriver.prototype.getTicketById = function (ticketId, callback) {
 
     var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
     if (!checkForHexRegExp.test(ticketId)) callback({error: "invalid id"});
     var selection = {'_id': ObjectID(ticketId)};
-    this.getTickets(selection, function (err, docs) {
+    this.getTickets(selection, true, function (err, docs) {
         if (err) {
             callback(err, null);
         } else {
@@ -402,7 +402,7 @@ CollectionDriver.prototype.getTicketById = function ticketsJoin(ticketId, callba
 };
 
 
-CollectionDriver.prototype.getTickets = function (selection, callback) {
+CollectionDriver.prototype.getTickets = function (selection, giveUser, callback) {
     var that = this;
     that.getCollection('tickets', function (error, the_collection) {
         if (error) callback(error);
@@ -419,12 +419,24 @@ CollectionDriver.prototype.getTickets = function (selection, callback) {
                     to: '_id',
                     from: 'movies'
                 });
+            if (giveUser) {
+                join.on({
+                    field: 'userId',
+                    as: 'user',
+                    to: '_id',
+                    from: 'users'
+                });
+            }
+
             join.toArray(cursor, function (err, joinedDocs) {
+                _.forEach(joinedDocs, function (obj) {
+                    _.unset(obj, 'user.password');
+                });
                 callback(err, _.sortBy(joinedDocs, 'date'));
             });
         });
     });
-}
+};
 
 
 exports.CollectionDriver = CollectionDriver;

@@ -195,29 +195,6 @@ app.get('/:collection/:entity', function (req, res) {
     }
 });
 
-// app.post('/location', function (req, res) {
-//     var object = req.body;
-//     object.jj = 'dd';
-//     console.log(object.location);
-//     var entity = '5853a44cc0166bd61dd42327';
-//     var collection = 'vendors';
-//     collectionDriver.get(collection, entity, function (error, objs) { //J
-//         if (error) {
-//             res.send(400, error);
-//         } else {
-//             console.log(objs.location);
-//             res.send(200, {distance: Utils.getDistanceFromLatLonInKm(object.location.lat, object.location.lng, objs.location.lat, objs.location.lng)});
-//         }
-//     });
-// });
-//
-// app.post('/location1', function (req, res) {
-//     var object = req.body;
-//     sockets[object.id].emit('pass', 'pass', function () {
-//         res.send(200, {data: 'data'});
-//     });
-// });
-
 app.post('/shows', function (req, res) {
     var resData = req.body;
     var collection = 'shows';

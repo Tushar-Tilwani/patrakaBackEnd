@@ -8,7 +8,8 @@ var http = require('http'),
     CollectionDriver = require('./collectionDriver').CollectionDriver,
     _ = require('lodash'),
     moment = require('moment'),
-    Utils = require('./utils').Utils;
+    Utils = require('./utils').Utils,
+    ObjectID = require('mongodb').ObjectID;
 
 var app = express();
 app.set('port', process.env.PORT || 3000);
@@ -44,7 +45,7 @@ app.use(cors());
 
 app.use('/*', function (req, res, next) {
     var token = req.query.token;
-    console.log(token);
+    //console.log(token);
     return next();
 });
 
@@ -83,6 +84,7 @@ app.get('/movies/filter/:pattern', function (req, res) {
 
 app.get('/vendors/:vendorId/movies', function (req, res) {
     var vendorId = req.params.vendorId;
+    console.log(vendorId);
     if (vendorId) {
         collectionDriver.getMoviesByVendor(vendorId, function (error, objs) {
             if (error) {
@@ -198,38 +200,22 @@ app.get('/:collection/:entity', function (req, res) {
 app.post('/shows', function (req, res) {
     var resData = req.body;
     var collection = 'shows';
-
-    /*var obj = {
-     moviesTimes: <Array<Integer>> Secs,
-     price: <Float>,
-     startDate: <Date>,'12-25-1995'
-     noOfDays: Integer,
-     movieId:<String>,
-     vendorId:<String>,
-     ticketAvailable:<Integer>
-     };*/
-
-    //console.log(resData);
-    //res.send(201, resData);
-
-
     var objects = [];
 
     _.times(_.toInteger(resData.noOfDays) + 1, function (i) {
-        _.forEach(resData.moviesTimes, function (seconds) {
+        _.forEach(resData.showsTimes, function (seconds) {
             objects.push({
-                date: moment(resData.startDate, 'MM-DD-YYYY').add(i, 'd').add(seconds, 's').unix(),
+                date: moment(resData.startDate, 'LL').add(i, 'd').add(seconds, 's').unix(),
                 price: _.toNumber(resData.price),
-                movieId: resData.movieId,
-                vendorId: resData.vendorId,
-                ticketAvailable: resData.ticketAvailable
+                movieId: ObjectID(resData.movieId),
+                vendorId: ObjectID(resData.vendorId),
+                ticketsAvailable: resData.ticketsAvailable,
+                theaterNumber: resData.theaterNumber,
+                showTime: seconds
             });
+
         });
     });
-
-    //console.log(resData.moviesTimes);
-
-    //res.send(201, objects);
 
     collectionDriver.batchInsert(collection, objects, function (err, docs) {
         if (err) {
@@ -238,6 +224,7 @@ app.post('/shows', function (req, res) {
             res.send(201, docs);
         }
     });
+
 });
 
 app.post('/tickets', function (req, res) {

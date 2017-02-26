@@ -1,6 +1,8 @@
 load('/Users/tilwanit/Documents/nodeJs/patrakaServer/data/scripts/moment.js');
 load('/Users/tilwanit/Documents/nodeJs/patrakaServer/data/scripts/lodash.js');
 
+conn = new Mongo();
+db = conn.getDB("patrakaDB");
 
 var vendorCollection = db.vendors,
     movieCollection = db.movies;
@@ -42,7 +44,7 @@ function generateShows(movieId, vendorId) {
         ticketsAvailable: ticketsAvailable[_.random(ticketsAvailable.length - 1)],
         theaterNumber: theaterNumber[_.random(theaterNumber.length - 1)]
     };
-    //printjson(obj);
+    printjson(resData);
 
     var bulk = showCollection.initializeUnorderedBulkOp();
 

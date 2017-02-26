@@ -220,6 +220,7 @@ CollectionDriver.prototype.getMoviesByVendor = function (vendorId, callback) {
         if (error) callback(error);
         else {
             var movieIds = _.keys(_.groupBy(shows, 'movieId'));
+            console.log(shows);
             that.findAllByIds('movies', movieIds, function (error, docs) {
                 if (error) {
                     callback(error);

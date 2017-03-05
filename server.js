@@ -53,6 +53,19 @@ app.get('', function (req, res) {
     res.send('<html><body><h1>Hello World</h1></body></html>');
 });
 
+app.get('/i1/:ticketId', function (req, res) {
+    var ticketId = req.params.ticketId;
+    console.log(ticketId);
+    collectionDriver.makeTicketInvactive(ticketId, function (error, objs) {
+        if (error) {
+            res.send(400, error);
+        } else {
+            res.send(200, objs);
+        }
+    });
+});
+
+
 app.get('/movies/filter/:pattern/field/:field/order/:order/pageSize/:pageSize', function (req, res) {
     var params = req.params;
     var pageSize = _.toInteger(params.pageSize) || 10;
@@ -78,7 +91,7 @@ app.get('/movies/filter/:pattern', function (req, res) {
             res.send(200, objs);
         });
     } else {
-        res.send(400, {error: 'bad url', url: req.url});
+        res.send(400, {message: 'bad url', url: req.url});
     }
 });
 
@@ -93,7 +106,7 @@ app.get('/vendors/:vendorId/movies', function (req, res) {
             res.send(200, objs);
         });
     } else {
-        res.send(400, {error: 'bad url', url: req.url});
+        res.send(400, {message: 'bad url', url: req.url});
     }
 });
 
@@ -107,7 +120,7 @@ app.get('/vendors/:vendorId/shows', function (req, res) {
             res.send(200, objs);
         });
     } else {
-        res.send(400, {error: 'bad url', url: req.url});
+        res.send(400, {message: 'bad url', url: req.url});
     }
 });
 
@@ -122,7 +135,7 @@ app.get('/vendors/:vendorId/movies/:movieId/shows', function (req, res) {
             res.send(200, objs);
         });
     } else {
-        res.send(400, {error: 'bad url', url: req.url});
+        res.send(400, {message: 'bad url', url: req.url});
     }
 });
 
@@ -136,7 +149,7 @@ app.get('/movies/:movieId/vendors', function (req, res) {
             res.send(200, objs);
         });
     } else {
-        res.send(400, {error: 'bad url', url: req.url});
+        res.send(400, {message: 'bad url', url: req.url});
     }
 });
 
@@ -150,7 +163,7 @@ app.get('/tickets/:ticketId', function (req, res) {
             res.send(200, objs);
         });
     } else {
-        res.send(400, {error: 'bad url', url: req.url});
+        res.send(400, {message: 'bad url', url: req.url});
     }
 });
 
@@ -164,7 +177,22 @@ app.get('/tickets/user/:userId', function (req, res) {
             res.send(200, objs);
         });
     } else {
-        res.send(400, {error: 'bad url', url: req.url});
+        res.send(400, {message: 'bad url', url: req.url});
+    }
+});
+
+
+app.get('/vendors/:vendorId/MoviesWithShows', function (req, res) {
+    var vendorId = req.params.vendorId;
+    if (vendorId) {
+        collectionDriver.getShowMetaByVendor(vendorId, function (error, objs) {
+            if (error) {
+                res.send(400, error);
+            }
+            res.send(200, objs);
+        });
+    } else {
+        res.send(400, {message: 'bad url', url: req.url});
     }
 });
 
@@ -193,7 +221,7 @@ app.get('/:collection/:entity', function (req, res) {
             }
         });
     } else {
-        res.send(400, {error: 'bad url', url: req.url});
+        res.send(400, {message: 'bad url', url: req.url});
     }
 });
 
@@ -238,28 +266,29 @@ app.post('/tickets', function (req, res) {
     });
 });
 
-var currentResponse;
-app.post('/useTicket/:ticketId', function (req, res) {
-    var ticketId = req.params.ticketId;
-    currentResponse = res;
-    function sendRes(flag) {
-        return flag ? currentResponse.send(201, {flag: true}) : currentResponse.send(400, {message: 'Please see an agent.'});
-    }
-
-    collectionDriver.getTicketById(ticketId, function (err, doc) {
-        if (err) {
-            res.send(400, err);
-        } else {
-            var socket = sockets[doc.vendorId];
-            if (!socket) {
-                res.send(400, {message: 'Vendor not present.'});
-            } else {
-                sockets[doc.vendorId].emit('validate', doc);
-
-            }
-        }
-    });
-});
+// var currentResponse;
+//
+// app.post('/useTicket/:ticketId', function (req, res) {
+//     var ticketId = req.params.ticketId;
+//     currentResponse = res;
+//     function sendRes(flag) {
+//         return flag ? currentResponse.send(201, {flag: true}) : currentResponse.send(400, {message: 'Please see an agent.'});
+//     }
+//
+//     collectionDriver.getTicketById(ticketId, function (err, doc) {
+//         if (err) {
+//             res.send(400, err);
+//         } else {
+//             var socket = sockets[doc.vendorId];
+//             if (!socket) {
+//                 res.send(400, {message: 'Vendor not present.'});
+//             } else {
+//                 sockets[doc.vendorId].emit('validate', doc);
+//
+//             }
+//         }
+//     });
+// });
 
 app.post('/:collection', function (req, res) {
     var object = req.body;
@@ -301,7 +330,6 @@ app.put('/vendors/:vendorId/movie/:movieId', function (req, res) {
 });
 
 app.put('/:collection/:entity', function (req, res) { //A
-    console.log(JSON.stringify(req));
     var params = req.params;
     var entity = params.entity;
     var collection = params.collection;
@@ -410,6 +438,7 @@ var server = http.createServer(app);
 
 var io = require('socket.io')(server);
 
+
 io.on('connection', function (socket) {
     console.log(socket.handshake.query);
     var query = socket.handshake.query;
@@ -421,12 +450,10 @@ io.on('connection', function (socket) {
         console.log(data);
         var ticketId = data.ticketId;
         collectionDriver.getTicketById(ticketId, function (err, doc) {
-            //console.log(doc);
             if (err) {
                 socket.emit('validatedTicketResult', {flag: false, message: 'Invalid Ticket!'});
             } else {
                 var vendorSocket = sockets[doc.vendorId];
-                console.log(vendorSocket && vendorSocket.connected);
                 if (vendorSocket && vendorSocket.connected) {
                     vendorSocket.emit('validateTicket', _.assignIn(doc, data));
                 } else {
@@ -437,8 +464,16 @@ io.on('connection', function (socket) {
     });
 
     socket.on('validatedTicketResult', function (result) {
-        //console.log(result);
-        sockets[result.userId].emit('validatedTicketResult', result);
+        if (result.flag) {
+            var ticketId = result.ticketId;
+            collectionDriver.makeTicketInvactive(ticketId, function (error, objs) {
+                result.flag = !error;
+                sockets[result.userId].emit('validatedTicketResult', result);
+            });
+        } else {
+            sockets[result.userId].emit('validatedTicketResult', result);
+        }
+
     });
 
     socket.on('end', function (id) {

@@ -39,8 +39,8 @@ function generateShows(movieId, vendorId) {
         price: prices[_.random(prices.length - 1)],
         startDate: moment().format('MM-DD-YYYY'),
         noOfDays: 1,
-        movieId: movieId,
-        vendorId: vendorId,
+        movieId: movieId.str,
+        vendorId: vendorId.str,
         ticketsAvailable: ticketsAvailable[_.random(ticketsAvailable.length - 1)],
         theaterNumber: theaterNumber[_.random(theaterNumber.length - 1)]
     };
@@ -60,7 +60,8 @@ function generateShows(movieId, vendorId) {
                 vendorId: resData.vendorId,
                 ticketsAvailable: resData.ticketsAvailable,
                 theaterNumber: resData.theaterNumber,
-                showTime: seconds
+                showTime: seconds,
+                sold: 0
             });
 
         });

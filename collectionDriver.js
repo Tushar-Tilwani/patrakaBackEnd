@@ -1,6 +1,7 @@
 var ObjectID = require('mongodb').ObjectID,
     _ = require('lodash'),
-    Join = require('mongo-join').Join;
+    Join = require('mongo-join').Join,
+    moment = require('moment');
 
 CollectionDriver = function (db) {
     this.db = db;
@@ -32,7 +33,7 @@ CollectionDriver.prototype.get = function (collectionName, id, callback) {
         if (error) callback(error);
         else {
             var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
-            if (!checkForHexRegExp.test(id)) callback({error: "invalid id"});
+            if (!checkForHexRegExp.test(id)) callback({message: "invalid id"});
             else the_collection.findOne({'_id': ObjectID(id)}, function (error, doc) {
                 if (error) callback(error);
                 else callback(null, doc);
@@ -113,7 +114,13 @@ CollectionDriver.prototype.createTickets = function (ticketObj, callback) {
             if (error) {
                 return callback(error);
             }
-            the_collection.update({'_id': ObjectID(ticketObj.showId)}, {$inc: {ticketsAvailable: (0 - _.toInteger(ticketObj.count))}},
+            var ticketCount = _.toInteger(ticketObj.count);
+            the_collection.update({'_id': ObjectID(ticketObj.showId)}, {
+                    $inc: {
+                        ticketsAvailable: (0 - ticketCount),
+                        sold: ticketCount
+                    }
+                },
                 function (error, result) {
                     if (error || !_.get(result, ['result', 'ok'])) {
                         return callback(error);
@@ -126,7 +133,6 @@ CollectionDriver.prototype.createTickets = function (ticketObj, callback) {
                     });
                 });
         });
-
     });
 };
 
@@ -151,48 +157,6 @@ var bookTicketBusinessRules = function (collection, ticketObj, callback) {
     }
 };
 
-// CollectionDriver.prototype.getTicketsByUserId = function (userId, callback) {
-//     var selection = {'userId': userId};
-//     var that = this;
-//     that.getCollection('tickets', function (error, the_collection) {
-//         if (error) callback(error);
-//         else {
-//             the_collection.find(selection, {}, {'limit': 100}).sort({'date': 1})
-//                 .toArray(function (error, results) {
-//                     if (error) callback(error);
-//                     else callback(null, results);
-//                 });
-//         }
-//     });
-// };
-
-
-// CollectionDriver.prototype.getMoviesById = function (obj, callback) {
-//     var that = this;
-//     that.getCollection('shows', function (error, the_collection) {
-//         if (error) {
-//             return callback(error);
-//         }
-//         bookTicketBusinessRules(the_collection, obj, function (error, result) {
-//             if (error) {
-//                 return callback(error);
-//             }
-//             the_collection.update({'_id': ObjectID(obj.showId)}, {$inc: {ticketsAvailable: (0 - _.toInteger(obj.count))}},
-//                 function (error, result) {
-//                     if (error || !_.get(result, ['result', 'ok'])) {
-//                         return callback(error);
-//                     }
-//                     that.save('tickets', obj, function (error, result) {
-//                         if (error) {
-//                             return callback(error);
-//                         }
-//                         callback(null, result);
-//                     });
-//                 });
-//         });
-//
-//     });
-// };
 
 //find a specific object
 CollectionDriver.prototype.findAllByIds = function (collectionName, ids, callback) {
@@ -238,7 +202,7 @@ CollectionDriver.prototype.getShowsByVendor = function (vendorId, callback) {
     var that = this;
     that.getCollection('shows', function (error, the_collection) {
         if (error) callback(error);
-        the_collection.find({'vendorId': ObjectID(vendorId)})
+        the_collection.find({'vendorId': vendorId})
             .toArray(function (error, results) {
                 if (error) callback(error);
                 else {
@@ -253,7 +217,7 @@ CollectionDriver.prototype.getShowsByMovie = function (movieId, callback) {
     var that = this;
     that.getCollection('shows', function (error, the_collection) {
         if (error) callback(error);
-        the_collection.find({'movieId': ObjectID(movieId)})
+        the_collection.find({'movieId': movieId})
             .toArray(function (error, results) {
                 if (error) callback(error);
                 else {
@@ -268,8 +232,8 @@ CollectionDriver.prototype.getShowsByVendorAndMovie = function (vendorId, movieI
     that.getCollection('shows', function (error, the_collection) {
         if (error) callback(error);
         the_collection.find({
-            'vendorId': ObjectID(vendorId),
-            'movieId': ObjectID(movieId)
+            'vendorId': vendorId,
+            'movieId': movieId
         }).toArray(function (error, results) {
             if (error) callback(error);
             else {
@@ -389,9 +353,8 @@ CollectionDriver.prototype.getTicketsByUserId = function (userId, callback) {
 };
 
 CollectionDriver.prototype.getTicketById = function (ticketId, callback) {
-
     var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
-    if (!checkForHexRegExp.test(ticketId)) callback({error: "invalid id"});
+    if (!checkForHexRegExp.test(ticketId)) callback({message: "invalid id"});
     var selection = {'_id': ObjectID(ticketId)};
     this.getTickets(selection, true, function (err, docs) {
         if (err) {
@@ -439,5 +402,64 @@ CollectionDriver.prototype.getTickets = function (selection, giveUser, callback)
     });
 };
 
+
+CollectionDriver.prototype.getShowMetaByVendor = function (vendorId, callback) {
+    var that = this;
+    that.getCollection('shows', function (error, the_collection) {
+        if (error) callback(error);
+        else {
+            var selection = {'vendorId': vendorId};
+            the_collection.find(selection, function (err, cursor) {
+                var join = new Join(that.db)
+                    .on({
+                        field: 'movieId',
+                        as: 'movie',
+                        to: '_id',
+                        from: 'movies'
+                    });
+
+                join.toArray(cursor, function (err, joinedDocs) {
+                    if (error) {
+                        callback(error);
+                    } else {
+                        var results = [];
+                        var shows = _.groupBy(joinedDocs, 'movieId');
+                        _.forEach(shows, function (s, i) {
+                            var showTimes = _.keys(_.groupBy(s, 'showTime'));
+                            var start_date = moment(_.minBy(s, 'date').date);
+                            var end_date = _.maxBy(s, 'date').date;
+                            results.push({
+                                showTimes: showTimes,
+                                start_date: start_date,
+                                end_date: end_date,
+                                movie: _.head(s).movie
+                            });
+                        });
+                        callback(null, results);
+                    }
+                });
+            });
+        }
+    });
+};
+
+CollectionDriver.prototype.makeTicketInvactive = function (ticketId, callback) {
+    var that = this;
+    console.log(ticketId);
+    that.getCollection('tickets', function (error, the_collection) {
+        if (error) callback(error);
+        else {
+            console.log(ticketId);
+            the_collection.update({_id: ObjectID(ticketId)}, {
+                $set: {
+                    status: 'inactive'
+                }
+            }, {upsert: true}, function (error, doc) {
+                if (error) callback(error);
+                else callback(null, doc);
+            });
+        }
+    });
+};
 
 exports.CollectionDriver = CollectionDriver;

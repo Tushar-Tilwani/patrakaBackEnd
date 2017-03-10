@@ -1,13 +1,11 @@
-//printjson(db.shows.find().limit(2));
+conn = new Mongo();
+db = conn.getDB("patrakaDB");
 
-db.shows.drop();
-
-//db.shows_all.find().sort({'fields.rank':1}).limit(50)
-
-db.shows_all.find().sort({'fields.rank':1}).limit(50).forEach(function(doc){
-   db.shows.insert(doc);
-});
-
-var f = db.shows.findOne();
-
-printjson(f);
+db.dummy_vendors.update(
+    {},
+    {
+        $set: {
+           blacklist:['5853a2983dc77b661dbf364f']
+        }
+    }
+);

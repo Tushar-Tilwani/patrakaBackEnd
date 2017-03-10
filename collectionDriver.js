@@ -260,6 +260,44 @@ CollectionDriver.prototype.getVendorsByMovie = function (movieId, callback) {
     });
 };
 
+//Removes blacklisted users
+CollectionDriver.prototype.getVendorsByMovieCorrected = function (movieId, userId, callback) {
+    var that = this;
+    that.getShowsByMovie(movieId, function (error, shows) {
+        if (error) callback(error);
+        else {
+            var vendorIds = _.keys(_.groupBy(shows, 'vendorId'));
+
+            that.getCollection('vendors', function (error, the_collection) {
+                if (error) callback(error);
+                else {
+                    var objIds = _.map(vendorIds, function (id) {
+                        return ObjectID(id);
+                    }, {});
+
+                    var selection = {
+                        '_id': {'$in': objIds},
+                        'blacklist': {
+                            $elemMatch: {
+                                $ne: userId
+                            }
+                        }
+                    };
+
+                    the_collection.find(selection)
+                        .toArray(function (error, results) {
+                            if (error) callback(error);
+                            else {
+                                callback(null, results);
+                            }
+                        });
+                }
+            });
+        }
+    });
+};
+
+
 CollectionDriver.prototype.getMoviesByPattern = function (pattern, callback) {
     var that = this;
     that.getCollection('movies', function (error, the_collection) {
@@ -459,6 +497,16 @@ CollectionDriver.prototype.makeTicketInvactive = function (ticketId, callback) {
                 else callback(null, doc);
             });
         }
+    });
+};
+
+CollectionDriver.prototype.getUsers = function (userIds, callback) {
+    var that = this;
+    that.findAllByIds('users', userIds, function (error, docs) {
+        if (error) {
+            callback(error);
+        }
+        callback(null, docs);
     });
 };
 

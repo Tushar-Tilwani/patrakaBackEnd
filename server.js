@@ -153,6 +153,21 @@ app.get('/movies/:movieId/vendors', function (req, res) {
     }
 });
 
+app.get('/movies/:movieId/user/:userId/vendors', function (req, res) {
+    var movieId = req.params.movieId;
+    var userId = req.params.userId;
+    if (movieId) {
+        collectionDriver.getVendorsByMovieCorrected(movieId, userId, function (error, objs) {
+            if (error) {
+                res.send(400, error);
+            }
+            res.send(200, objs);
+        });
+    } else {
+        res.send(400, {message: 'bad url', url: req.url});
+    }
+});
+
 app.get('/tickets/:ticketId', function (req, res) {
     var ticketId = req.params.ticketId;
     if (ticketId) {
@@ -258,6 +273,18 @@ app.post('/shows', function (req, res) {
 app.post('/tickets', function (req, res) {
     var object = req.body;
     collectionDriver.createTickets(object, function (err, docs) {
+        if (err) {
+            res.send(400, err);
+        } else {
+            res.send(201, docs);
+        }
+    });
+});
+
+app.post('/getUsers', function (req, res) {
+    var userIds = req.body.userIds;
+    console.log(req.body);
+    collectionDriver.getUsers(userIds, function (err, docs) {
         if (err) {
             res.send(400, err);
         } else {

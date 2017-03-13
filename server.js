@@ -225,6 +225,18 @@ app.get('/users/filter/:pattern', function (req, res) {
     }
 });
 
+app.get('/getUserByToken/:token', function (req, res) {
+    collectionDriver.getUserByToken(req.params.token, function (error, objs) { //C
+        if (error) {
+            res.status(400).send(error);
+        } else {
+            res.set('Content-Type', 'application/json');
+            res.status(200).send(objs);
+        }
+    });
+});
+
+
 app.get('/:collection', function (req, res) {
     console.log('request');
     collectionDriver.findAll(req.params.collection, function (error, objs) { //C
@@ -252,6 +264,20 @@ app.get('/:collection/:entity', function (req, res) {
     } else {
         res.send(400, {message: 'bad url', url: req.url});
     }
+});
+
+
+app.post('/login', function (req, res) {
+    var resData = req.body;
+    console.log(resData);
+    collectionDriver.login(resData.user_name, resData.password, function (err, docs) {
+        if (err) {
+            console.log(err);
+            res.send(400, err);
+        } else {
+            res.send(201, docs);
+        }
+    });
 });
 
 app.post('/shows', function (req, res) {
@@ -297,7 +323,6 @@ app.post('/tickets', function (req, res) {
 
 app.post('/getUsers', function (req, res) {
     var userIds = req.body.ids;
-    console.log(req.body);
     collectionDriver.getUsers(userIds, function (err, docs) {
         if (err) {
             res.send(400, err);
@@ -306,30 +331,6 @@ app.post('/getUsers', function (req, res) {
         }
     });
 });
-
-// var currentResponse;
-//
-// app.post('/useTicket/:ticketId', function (req, res) {
-//     var ticketId = req.params.ticketId;
-//     currentResponse = res;
-//     function sendRes(flag) {
-//         return flag ? currentResponse.send(201, {flag: true}) : currentResponse.send(400, {message: 'Please see an agent.'});
-//     }
-//
-//     collectionDriver.getTicketById(ticketId, function (err, doc) {
-//         if (err) {
-//             res.send(400, err);
-//         } else {
-//             var socket = sockets[doc.vendorId];
-//             if (!socket) {
-//                 res.send(400, {message: 'Vendor not present.'});
-//             } else {
-//                 sockets[doc.vendorId].emit('validate', doc);
-//
-//             }
-//         }
-//     });
-// });
 
 app.post('/:collection', function (req, res) {
     var object = req.body;
@@ -343,7 +344,6 @@ app.post('/:collection', function (req, res) {
         }
     });
 });
-
 
 app.put('/vendors/:vendorId/addBlacklist/:userId', function (req, res) {
     var userId = req.params.userId;

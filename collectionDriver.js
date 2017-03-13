@@ -166,7 +166,7 @@ CollectionDriver.prototype.findAllByIds = function (collectionName, ids, callbac
             var objIds = _.map(ids, function (id) {
                 return ObjectID(id);
             }, {});
-
+            console.log(objIds);
             the_collection.find({'_id': {'$in': objIds}})
                 .toArray(function (error, results) {
                     if (error) callback(error);
@@ -198,17 +198,44 @@ CollectionDriver.prototype.getMoviesByVendor = function (vendorId, callback) {
 };
 
 
+// CollectionDriver.prototype.getShowsByVendor = function (vendorId, callback) {
+//     var that = this;
+//     that.getCollection('shows', function (error, the_collection) {
+//         if (error) callback(error);
+//         the_collection.find({'vendorId': vendorId})
+//             .toArray(function (error, results) {
+//                 if (error) callback(error);
+//                 else {
+//                     callback(null, results);
+//                 }
+//             });
+//     });
+// };
+
+
 CollectionDriver.prototype.getShowsByVendor = function (vendorId, callback) {
     var that = this;
     that.getCollection('shows', function (error, the_collection) {
         if (error) callback(error);
-        the_collection.find({'vendorId': vendorId})
-            .toArray(function (error, results) {
-                if (error) callback(error);
-                else {
-                    callback(null, results);
-                }
-            });
+        else {
+            var selection = {'vendorId': vendorId};
+            the_collection.find(selection, function (err, cursor) {
+                var join = new Join(that.db)
+                    .on({
+                        field: 'movieId',
+                        as: 'movie',
+                        to: '_id',
+                        from: 'movies'
+                    });
+
+                join.toArray(cursor, function (error, joinedDocs) {
+                    if (error) {
+                        callback(error, joinedDocs);
+                    }
+                    callback(null, joinedDocs);
+                })
+            })
+        }
     });
 };
 
@@ -319,47 +346,6 @@ CollectionDriver.prototype.getMoviesByPattern = function (pattern, callback) {
     });
 };
 
-CollectionDriver.prototype.addMovieToVendor = function (vendorId, movieId, callback) {
-    var that = this;
-    this.getCollection('vendors', function (error, the_collection) {
-        if (error) callback(error);
-        else {
-            // db.students.update(
-            //     { _id: 1 },
-            //     { $push: { scores: 89 } }
-            // )
-            //console.log(pattern);
-            //db.movies.findOne({'fields.title': { '$regex' : /don.*/i }})
-            var selection = {'_id': ObjectID(vendorId)};
-            var push = {'$push': {'movies': movieId}};
-            the_collection.update(selection, push, function (error, result) {
-                if (error) callback(error);
-                else callback(null, result);
-            });
-        }
-    });
-};
-
-CollectionDriver.prototype.removeMovieFromVendor = function (vendorId, movieId, callback) {
-    var that = this;
-    that.getCollection('vendors', function (error, the_collection) {
-        if (error) callback(error);
-        else {
-            // db.students.update(
-            //     { _id: 1 },
-            //     { $push: { scores: 89 } }
-            // )
-            //console.log(pattern);
-            //db.movies.findOne({'fields.title': { '$regex' : /don.*/i }})
-            var selection = {'_id': ObjectID(vendorId)};
-            var push = {'$pull': {'movies': movieId}};
-            the_collection.update(selection, push, function (error, result) {
-                if (error) callback(error);
-                else callback(null, result);
-            });
-        }
-    });
-};
 
 CollectionDriver.prototype.getSortedMovies = function (pattern, field, order, pageSize, callback) {
     var that = this;
@@ -506,8 +492,71 @@ CollectionDriver.prototype.getUsers = function (userIds, callback) {
         if (error) {
             callback(error);
         }
-        callback(null, docs);
+        callback(null, removePassword(docs));
     });
 };
+
+CollectionDriver.prototype.addBlacklistUsers = function (vendorId, userId, callback) {
+    var that = this;
+    that.getCollection('vendors', function (error, the_collection) {
+        if (error) callback(error);
+        else {
+            var selection = {'_id': ObjectID(vendorId)};
+            var push = {'$addToSet': {'blacklist': userId}};
+            the_collection.update(selection, push, function (error, result) {
+                if (error) callback(error);
+                else callback(null, result);
+            });
+        }
+    });
+};
+
+CollectionDriver.prototype.removeBlacklistUsers = function (vendorId, userId, callback) {
+    var that = this;
+    that.getCollection('vendors', function (error, the_collection) {
+        if (error) callback(error);
+        else {
+            var selection = {'_id': ObjectID(vendorId)};
+            var push = {'$pull': {'blacklist': userId}};
+            the_collection.update(selection, push, function (error, result) {
+                if (error) callback(error);
+                else callback(null, result);
+            });
+        }
+    });
+};
+
+CollectionDriver.prototype.getUsersByPattern = function (pattern, callback) {
+    var that = this;
+    that.getCollection('users', function (error, the_collection) {
+        if (error) {
+            callback(error);
+        }
+        //console.log(pattern);
+        //db.movies.findOne({'fields.title': { '$regex' : /don.*/i }})
+        if (pattern === '*') {
+            pattern = '';
+        }
+        var regex = new RegExp(pattern + '.*');
+        var selection = {
+            '$or': [
+                {'first_name': {'$regex': regex, '$options': 'i'}},
+                {'last_name': {'$regex': regex, '$options': 'i'}}
+            ]
+        };
+
+        the_collection.find(selection, {}, {'limit': 10})
+            .toArray(function (error, results) {
+                if (error) callback(error);
+                else callback(null, results)
+            });
+    });
+};
+
+function removePassword(users) {
+    return _.map(users, function (user) {
+        return _.omit(user, 'password');
+    });
+}
 
 exports.CollectionDriver = CollectionDriver;

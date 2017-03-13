@@ -211,6 +211,20 @@ app.get('/vendors/:vendorId/MoviesWithShows', function (req, res) {
     }
 });
 
+app.get('/users/filter/:pattern', function (req, res) {
+    var pattern = req.params.pattern;
+    if (pattern) {
+        collectionDriver.getUsersByPattern(pattern, function (error, objs) {
+            if (error) {
+                res.send(400, error);
+            }
+            res.send(200, objs);
+        });
+    } else {
+        res.send(400, {message: 'bad url', url: req.url});
+    }
+});
+
 app.get('/:collection', function (req, res) {
     console.log('request');
     collectionDriver.findAll(req.params.collection, function (error, objs) { //C
@@ -250,8 +264,8 @@ app.post('/shows', function (req, res) {
             objects.push({
                 date: moment(resData.startDate, 'LL').add(i, 'd').add(seconds, 's').unix(),
                 price: _.toNumber(resData.price),
-                movieId: ObjectID(resData.movieId),
-                vendorId: ObjectID(resData.vendorId),
+                movieId: resData.movieId,
+                vendorId: resData.vendorId,
                 ticketsAvailable: resData.ticketsAvailable,
                 theaterNumber: resData.theaterNumber,
                 showTime: seconds
@@ -282,7 +296,7 @@ app.post('/tickets', function (req, res) {
 });
 
 app.post('/getUsers', function (req, res) {
-    var userIds = req.body.userIds;
+    var userIds = req.body.ids;
     console.log(req.body);
     collectionDriver.getUsers(userIds, function (err, docs) {
         if (err) {
@@ -330,19 +344,13 @@ app.post('/:collection', function (req, res) {
     });
 });
 
-app.put('/testPUT', function (req, res) {
-    console.log(req.body);
-    var f = req.body;
-    console.log(f.dates);
-    res.send(200, {'value': 'life is awesome in PUT'});
-});
 
-app.put('/vendors/:vendorId/movie/:movieId', function (req, res) {
-    var movieId = req.params.movieId;
+app.put('/vendors/:vendorId/addBlacklist/:userId', function (req, res) {
+    var userId = req.params.userId;
     var vendorId = req.params.vendorId;
 
-    if (movieId && vendorId) {
-        collectionDriver.addMovieToVendor(vendorId, movieId, function (error, objs) { //B
+    if (userId && vendorId) {
+        collectionDriver.addBlacklistUsers(vendorId, userId, function (error, objs) { //B
             if (error) {
                 res.send(400, error);
             }
@@ -351,26 +359,25 @@ app.put('/vendors/:vendorId/movie/:movieId', function (req, res) {
             }
         });
     } else {
-        var error = {'message': 'error'};
+        var error = {'message': 'Unknown Error'};
         res.send(400, error);
     }
 });
 
-app.put('/:collection/:entity', function (req, res) { //A
-    var params = req.params;
-    var entity = params.entity;
-    var collection = params.collection;
-    if (entity) {
-        collectionDriver.update(collection, req.body, entity, function (error, objs) { //B
+app.delete('/vendors/:vendorId/removeBlacklist/:userId', function (req, res) {
+    var userId = req.params.userId;
+    var vendorId = req.params.vendorId;
+
+    if (userId && vendorId) {
+        collectionDriver.removeBlacklistUsers(vendorId, userId, function (error, objs) { //B
             if (error) {
                 res.send(400, error);
-            }
-            else {
+            } else {
                 res.send(200, objs);
             }
         });
     } else {
-        var error = {'message': 'Cannot PUT a whole collection'};
+        var error = {'message': 'Unknown Error'};
         res.send(400, error);
     }
 });
@@ -407,25 +414,6 @@ app.delete('/:collection/:entity', function (req, res) {
     };
 
     deleteTicketBusinessRules(collection, entity, callback);
-});
-
-app.delete('/vendors/:vendorId/movie/:movieId', function (req, res) {
-    var movieId = req.params.movieId;
-    var vendorId = req.params.vendorId;
-
-    if (movieId && vendorId) {
-        collectionDriver.removeMovieFromVendor(vendorId, movieId, function (error, objs) { //B
-            if (error) {
-                res.send(400, error);
-            }
-            else {
-                res.send(200, objs);
-            }
-        });
-    } else {
-        var error = {'message': 'Cannot PUT a whole collection'};
-        res.send(400, error);
-    }
 });
 
 var deleteTicketBusinessRules = function (collection, entity, callback) {

@@ -1,5 +1,5 @@
-load('/Users/tilwanit/Documents/nodeJs/patrakaServer/data/scripts/moment.js');
-load('/Users/tilwanit/Documents/nodeJs/patrakaServer/data/scripts/lodash.js');
+load(pwd() + '/libs/moment.js');
+load(pwd() + '/libs/lodash.js');
 
 conn = new Mongo();
 db = conn.getDB("patrakaDB");
@@ -117,7 +117,7 @@ movieCollection.find().limit(5).forEach(function (movie) {
  print(d);
  }); */
 
-db.vendors.find().forEach(function (doc) {
-    delete doc.shows;
-    db.vendors.save(doc);
-});
+// db.vendors.find().forEach(function (doc) {
+//     delete doc.shows;
+//     db.vendors.save(doc);
+// });

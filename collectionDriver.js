@@ -1,7 +1,8 @@
 var ObjectID = require('mongodb').ObjectID,
     _ = require('lodash'),
     Join = require('mongo-join').Join,
-    moment = require('moment');
+    moment = require('moment'),
+    md5 = require("blueimp-md5");
 
 CollectionDriver = function (db) {
     this.db = db;
@@ -563,7 +564,7 @@ CollectionDriver.prototype.login = function (user_name, password, callback) {
         var selection = {
             '$and': [
                 {'user_name': user_name},
-                {'password': password}
+                {'password': md5(password)}
             ]
         };
 
@@ -603,6 +604,46 @@ CollectionDriver.prototype.getUserByToken = function (token, callback) {
     });
 
 };
+
+// CollectionDriver.prototype.authenticateUser = function (user_name, password, callback) {
+//     this.getCollection('users', function (error, the_collection) {
+//         if (error) callback(error);
+//         else {
+//             var selection = {
+//                 user_name: user_name,
+//                 password: md5(password)
+//             };
+//
+//             the_collection.findOne(selection, {}, function (error, doc) { //B
+//                 //console.log(doc);
+//                 if (error) {
+//                     callback(error)
+//                 } else if (_.isEmpty(doc)) {
+//                     callback({error: "User Not found!", status: 404});
+//                 } else {
+//                     var token = ObjectID();
+//                     var selection = {
+//                         _id: ObjectID(doc._id)
+//                     };
+//                     var toUpdate = {};
+//                     toUpdate["$set"] = {
+//                         token: token
+//                     };
+//
+//                     the_collection.update(selection, toUpdate, {
+//                         "upsert": true
+//                     }, function (error, doc) { //B
+//                         if (error) {
+//                             callback(error);
+//                         }
+//                         else callback(null, toUpdate["$set"]);
+//                     });
+//                 }
+//             });
+//         }
+//     });
+// };
+
 
 function removePassword(users) {
     return _.map(users, function (user) {

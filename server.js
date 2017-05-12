@@ -58,9 +58,9 @@ app.get('/i1/:ticketId', function (req, res) {
     console.log(ticketId);
     collectionDriver.makeTicketInvactive(ticketId, function (error, objs) {
         if (error) {
-            res.send(400, error);
+            res.status(400).send(error);
         } else {
-            res.send(200, objs);
+            res.status(200).send(objs);
         }
     });
 });
@@ -74,9 +74,9 @@ app.get('/movies/filter/:pattern/field/:field/order/:order/pageSize/:pageSize', 
     var pattern = params.pattern;
     collectionDriver.getSortedMovies(pattern, field, order, pageSize, function (error, objs) { //J
         if (error) {
-            res.send(400, error);
+            res.status(400).send(error);
         } else {
-            res.send(200, objs);
+            res.status(200).send(objs);
         }
     });
 });
@@ -86,12 +86,12 @@ app.get('/movies/filter/:pattern', function (req, res) {
     if (pattern) {
         collectionDriver.getMoviesByPattern(pattern, function (error, objs) {
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
-            res.send(200, objs);
+            res.status(200).send(objs);
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -101,12 +101,12 @@ app.get('/vendors/:vendorId/movies', function (req, res) {
     if (vendorId) {
         collectionDriver.getMoviesByVendor(vendorId, function (error, objs) {
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
-            res.send(200, objs);
+            res.status(200).send(objs);
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -115,12 +115,12 @@ app.get('/vendors/:vendorId/shows', function (req, res) {
     if (vendorId) {
         collectionDriver.getShowsByVendor(vendorId, function (error, objs) {
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
-            res.send(200, objs);
+            res.status(200).send(objs);
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -130,12 +130,12 @@ app.get('/vendors/:vendorId/movies/:movieId/shows', function (req, res) {
     if (vendorId) {
         collectionDriver.getShowsByVendorAndMovie(vendorId, movieId, function (error, objs) {
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
-            res.send(200, objs);
+            res.status(200).send(objs);
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -144,12 +144,12 @@ app.get('/movies/:movieId/vendors', function (req, res) {
     if (movieId) {
         collectionDriver.getVendorsByMovie(movieId, function (error, objs) {
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
-            res.send(200, objs);
+            res.status(200).send(objs);
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -159,12 +159,12 @@ app.get('/movies/:movieId/user/:userId/vendors', function (req, res) {
     if (movieId) {
         collectionDriver.getVendorsByMovieCorrected(movieId, userId, function (error, objs) {
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
-            res.send(200, objs);
+            res.status(200).send(objs);
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -173,12 +173,12 @@ app.get('/tickets/:ticketId', function (req, res) {
     if (ticketId) {
         collectionDriver.getTicketById(ticketId, function (error, objs) {
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
-            res.send(200, objs);
+            res.status(200).send(objs);
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -187,12 +187,12 @@ app.get('/tickets/user/:userId', function (req, res) {
     if (userId) {
         collectionDriver.getTicketsByUserId(userId, function (error, objs) {
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
-            res.send(200, objs);
+            res.status(200).send(objs);
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -202,12 +202,12 @@ app.get('/vendors/:vendorId/MoviesWithShows', function (req, res) {
     if (vendorId) {
         collectionDriver.getShowMetaByVendor(vendorId, function (error, objs) {
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
-            res.send(200, objs);
+            res.status(200).send(objs);
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -216,12 +216,12 @@ app.get('/users/filter/:pattern', function (req, res) {
     if (pattern) {
         collectionDriver.getUsersByPattern(pattern, function (error, objs) {
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
-            res.send(200, objs);
+            res.status(200).send(objs);
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -241,7 +241,7 @@ app.get('/:collection', function (req, res) {
     console.log('request');
     collectionDriver.findAll(req.params.collection, function (error, objs) { //C
         if (error) {
-            res.send(400, error);
+            res.status(400).send(error);
         } else {
             res.set('Content-Type', 'application/json');
             res.status(200).send(objs);
@@ -256,13 +256,13 @@ app.get('/:collection/:entity', function (req, res) {
     if (entity) {
         collectionDriver.get(collection, entity, function (error, objs) { //J
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             } else {
-                res.send(200, objs);
+                res.status(200).send(objs);
             }
         });
     } else {
-        res.send(400, {message: 'bad url', url: req.url});
+        res.status(400).send({message: 'bad url', url: req.url});
     }
 });
 
@@ -273,7 +273,7 @@ app.post('/login', function (req, res) {
     collectionDriver.login(resData.user_name, resData.password, function (err, docs) {
         if (err) {
             console.log(err);
-            res.send(400, err);
+            res.status(400).send(err);
         } else {
             res.send(201, docs);
         }
@@ -302,7 +302,7 @@ app.post('/shows', function (req, res) {
 
     collectionDriver.batchInsert(collection, objects, function (err, docs) {
         if (err) {
-            res.send(400, err);
+            res.status(400).send(err);
         } else {
             res.send(201, docs);
         }
@@ -314,7 +314,7 @@ app.post('/tickets', function (req, res) {
     var object = req.body;
     collectionDriver.createTickets(object, function (err, docs) {
         if (err) {
-            res.send(400, err);
+            res.status(400).send(err);
         } else {
             res.send(201, docs);
         }
@@ -325,7 +325,7 @@ app.post('/getUsers', function (req, res) {
     var userIds = req.body.ids;
     collectionDriver.getUsers(userIds, function (err, docs) {
         if (err) {
-            res.send(400, err);
+            res.status(400).send(err);
         } else {
             res.send(201, docs);
         }
@@ -338,7 +338,7 @@ app.post('/:collection', function (req, res) {
     console.log(collection);
     collectionDriver.save(collection, object, function (err, docs) {
         if (err) {
-            res.send(400, err);
+            res.status(400).send(err);
         } else {
             res.send(201, docs);
         }
@@ -352,15 +352,35 @@ app.put('/vendors/:vendorId/addBlacklist/:userId', function (req, res) {
     if (userId && vendorId) {
         collectionDriver.addBlacklistUsers(vendorId, userId, function (error, objs) { //B
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             }
             else {
-                res.send(200, objs);
+                res.status(200).send(objs);
             }
         });
     } else {
         var error = {'message': 'Unknown Error'};
-        res.send(400, error);
+        res.status(400).send(error);
+    }
+});
+
+app.put('/:collection/:entity', function (req, res) {
+    var params = req.params;
+    var entity = params.entity;
+    var collection = params.collection;
+    console.log("wdfdsfsd");
+    if (entity) {
+        collectionDriver.update(collection, req.body, entity, function (error, objs) {
+            if (error) {
+                res.status(400).send(error);
+            }
+            else {
+                res.status(200).send(objs);
+            }
+        });
+    } else {
+        var error = {"message": "Cannot PUT a whole collection"};
+        res.status(400).send(error);
     }
 });
 
@@ -371,16 +391,44 @@ app.delete('/vendors/:vendorId/removeBlacklist/:userId', function (req, res) {
     if (userId && vendorId) {
         collectionDriver.removeBlacklistUsers(vendorId, userId, function (error, objs) { //B
             if (error) {
-                res.send(400, error);
+                res.status(400).send(error);
             } else {
-                res.send(200, objs);
+                res.status(200).send(objs);
             }
         });
     } else {
         var error = {'message': 'Unknown Error'};
-        res.send(400, error);
+        res.status(400).send(error);
     }
 });
+
+app.delete('/deleteMovie/:movieId', function (req, res) {
+    var params = req.params;
+    var movieId = params.movieId;
+    var callback = function (err) {
+        if (err) {
+            res.status(400).send(err);
+        } else {
+            if (movieId) {
+                collectionDriver.delete('movies', movieId, function (error, objs) {
+                    if (error) {
+                        res.status(400).send(error);
+                    } else {
+                        res.status(200).send(JSON.stringify(objs));
+                    }
+                });
+            } else {
+                var error = {
+                    'message': 'Cannot DELETE the movie'
+                };
+                res.status(400).send(error);
+            }
+        }
+    };
+
+    deleteMovieBusinessRules(movieId, callback);
+});
+
 
 app.delete('/:collection/:entity', function (req, res) {
     var params = req.params;
@@ -388,19 +436,19 @@ app.delete('/:collection/:entity', function (req, res) {
     var collection = params.collection;
     var callback = function (err, obj) {
         if (err) {
-            res.send(400, {
+            res.status(400).send({
                 'message': err
             });
         } else {
             if (entity) {
                 collectionDriver.delete(collection, entity, function (error, objs) {
                     if (error) {
-                        res.send(400, error);
+                        res.status(400).send(error);
                     } else {
                         if (parseInt(JSON.stringify(objs))) {
-                            res.send(200, obj);
+                            res.status(200).send(obj);
                         } else {
-                            res.send(404, JSON.stringify(objs));
+                            res.status(404).send(JSON.stringify(objs));
                         }
                     }
                 });
@@ -408,13 +456,31 @@ app.delete('/:collection/:entity', function (req, res) {
                 var error = {
                     'message': 'Cannot DELETE a whole collection'
                 };
-                res.send(400, error);
+                res.status(400).send(error);
             }
         }
     };
 
     deleteTicketBusinessRules(collection, entity, callback);
 });
+
+
+var deleteMovieBusinessRules = function (movieId, callback) {
+    if (movieId) {
+        collectionDriver.getVendorsByMovie(movieId, function (error, objs) {
+            if (error) {
+                callback(error);
+            } else if (!_.isEmpty(objs)) {
+                callback({message: "Vendors are currently playing this movie"});
+            } else {
+                callback(null, objs);
+            }
+        });
+    } else {
+        callback({message: "Undefined Movie"});
+    }
+};
+
 
 var deleteTicketBusinessRules = function (collection, entity, callback) {
     if (entity) {

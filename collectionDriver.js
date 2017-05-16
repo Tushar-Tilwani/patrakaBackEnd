@@ -2,7 +2,7 @@ var ObjectID = require('mongodb').ObjectID,
     _ = require('lodash'),
     Join = require('mongo-join').Join,
     moment = require('moment'),
-    md5 = require("blueimp-md5");
+    hash_salt = require('pwd');
 
 CollectionDriver = function (db) {
     this.db = db;
@@ -467,11 +467,9 @@ CollectionDriver.prototype.getShowMetaByVendor = function (vendorId, callback) {
 
 CollectionDriver.prototype.makeTicketInvactive = function (ticketId, callback) {
     var that = this;
-    console.log(ticketId);
     that.getCollection('tickets', function (error, the_collection) {
         if (error) callback(error);
         else {
-            console.log(ticketId);
             the_collection.update({_id: ObjectID(ticketId)}, {
                 $set: {
                     status: 'inactive'
@@ -552,6 +550,64 @@ CollectionDriver.prototype.getUsersByPattern = function (pattern, callback) {
 };
 
 
+// var user = {};
+// pass.hash('my password', function (err, salt, hash) {
+//     user.salt = salt;
+//     user.hash = hash;
+//     console.log(user);
+// });
+
+
+// CollectionDriver.prototype.hashit = function (callback) {
+//     var that = this;
+//     that.findAll('users', function (error, users) {
+//         if (error) {
+//             callback(error);
+//         } else {
+//             _.forEach(users, function (user) {
+//                 hash_salt.hash('pass', function (err, salt, hash) {
+//                     user.password = {};
+//                     user.password.salt = salt;
+//                     user.password.hash = hash;
+//                     that.update('users', user, user._id, function (err, done) {
+//                         if (err) {
+//                             console.log(err);
+//                             return;
+//                         }
+//                         console.log(done);
+//                     });
+//                 });
+//             });
+//             callback(null, 'happy');
+//         }
+//     });
+// };
+
+
+function checkPasswordHash(clientPassword, databasePassword, callback) {
+    hash_salt.hash(clientPassword, databasePassword.salt)
+        .then(function (result) {
+            if (!_.isEqual(databasePassword.hash, result.hash)) {
+                callback({message: 'Invalid password'});
+                return;
+            }
+            callback(null, true);
+        });
+}
+
+function assignToken(the_collection, user, token, callback) {
+    the_collection.update({'_id': ObjectID(user._id)}, {
+        $set: token
+    }, function (error, data) {
+        if (error) {
+            callback(error);
+        } else {
+            var toSend = _.omit(_.assignIn(user, token), 'password');
+            callback(null, toSend);
+        }
+    });
+}
+
 CollectionDriver.prototype.login = function (user_name, password, callback) {
     var that = this;
     that.getCollection('users', function (error, the_collection) {
@@ -560,8 +616,7 @@ CollectionDriver.prototype.login = function (user_name, password, callback) {
         }
         var selection = {
             '$and': [
-                {'user_name': user_name},
-                {'password': md5(password)}
+                {'user_name': user_name}
             ]
         };
 
@@ -569,17 +624,15 @@ CollectionDriver.prototype.login = function (user_name, password, callback) {
             token: ObjectID()
         };
 
-        the_collection.findOne(selection, {password: 0}, function (error, user) {
+        the_collection.findOne(selection, function (error, user) {
             if (error || _.isEmpty(user)) {
-                callback(_.assignIn(error, {message: 'Invalid login'}));
+                callback(_.assignIn(error, {message: 'Invalid Username'}));
             } else {
-                the_collection.update({'_id': ObjectID(user._id)}, {
-                    $set: token
-                }, function (error, data) {
+                checkPasswordHash(password, user.password, function (error) {
                     if (error) {
                         callback(error);
                     } else {
-                        callback(null, _.assignIn(user, token));
+                        assignToken(the_collection, user, token, callback)
                     }
                 });
             }

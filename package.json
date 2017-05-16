@@ -13,6 +13,7 @@
     "mongo-join": "^1.0.0",
     "mongodb": "^2.2.12",
     "node-geolocation": "^1.15.14",
+    "pwd": "^1.1.0",
     "socket.io": "^1.7.2"
   }
 }

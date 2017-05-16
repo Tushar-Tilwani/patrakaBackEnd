@@ -49,6 +49,12 @@ app.get('', function (req, res) {
     res.send('<html><body><h1>Hello Node Service</h1></body></html>');
 });
 
+app.get('/hashit', function (req, res) {
+    collectionDriver.hashit(function () {
+        //res.status(200).send('happy');
+    });
+});
+
 router.get('', function (req, res) {
     res.send('<html><body><h1>Hello API</h1></body></html>');
 });

@@ -451,34 +451,24 @@ router.delete('/:collection/:entity', function (req, res) {
     var params = req.params;
     var entity = params.entity;
     var collection = params.collection;
-    var callback = function (err, obj) {
-        if (err) {
-            res.status(400).send({
-                'message': err
-            });
-        } else {
-            if (entity) {
-                collectionDriver.delete(collection, entity, function (error, objs) {
-                    if (error) {
-                        res.status(400).send(error);
-                    } else {
-                        if (parseInt(JSON.stringify(objs))) {
-                            res.status(200).send(obj);
-                        } else {
-                            res.status(404).send(JSON.stringify(objs));
-                        }
-                    }
-                });
-            } else {
-                var error = {
-                    'message': 'Cannot DELETE a whole collection'
-                };
+    if (entity) {
+        collectionDriver.delete(collection, entity, function (error, objs) {
+            if (error) {
                 res.status(400).send(error);
+            } else {
+                if (parseInt(JSON.stringify(objs))) {
+                    res.status(200).send(objs);
+                } else {
+                    res.status(404).send(JSON.stringify(objs));
+                }
             }
-        }
-    };
-
-    deleteTicketBusinessRules(collection, entity, callback);
+        });
+    } else {
+        var error = {
+            'message': 'Provide id'
+        };
+        res.status(400).send(error);
+    }
 });
 
 

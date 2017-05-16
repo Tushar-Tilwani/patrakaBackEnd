@@ -38,7 +38,7 @@ function generateShows(movieId, vendorId) {
         showsTimes: getRandom(showsTimes, 3),
         price: prices[_.random(prices.length - 1)],
         startDate: moment().format('MM-DD-YYYY'),
-        noOfDays: 1,
+        noOfDays: 8,
         movieId: movieId.str,
         vendorId: vendorId.str,
         ticketsAvailable: ticketsAvailable[_.random(ticketsAvailable.length - 1)],
@@ -110,6 +110,19 @@ movieCollection.find().limit(5).forEach(function (movie) {
  });
  });
 
+ {
+ "_id" : ObjectId("584de17321add78d38681703"),
+ "first_name" : "Tina",
+ "last_name" : "Burns",
+ "email" : "tburns14@github.io",
+ "gender" : "Female",
+ "ip_address" : "6.91.99.82",
+ "user_name" : "tburns14",
+ "password" : "1a1dc91c907325c69271ddf0c944bc72",
+ "balance" : 436.01,
+ "avatar" : "https://robohash.org/quiadistinctioeum.jpg?size=200x200&set=set1",
+ "phone" : "+01-815-129-6360"
+ }
 
 
  var d = moment();

@@ -43,17 +43,47 @@ app.use('/static', express.static(path.join(__dirname, 'public')));
 
 app.use(cors());
 
-app.use('/*', function (req, res, next) {
-    var token = req.query.token;
-    //console.log(token);
-    return next();
-});
+var router = express.Router();
 
 app.get('', function (req, res) {
-    res.send('<html><body><h1>Hello World</h1></body></html>');
+    res.send('<html><body><h1>Hello Node Service</h1></body></html>');
 });
 
-app.get('/i1/:ticketId', function (req, res) {
+router.get('', function (req, res) {
+    res.send('<html><body><h1>Hello API</h1></body></html>');
+});
+
+
+router.post('/login', function (req, res) {
+    var resData = req.body;
+    console.log(resData);
+    collectionDriver.login(resData.user_name, resData.password, function (err, docs) {
+        if (err) {
+            console.log(err);
+            res.status(400).send(err);
+        } else {
+            res.send(201, docs);
+        }
+    });
+});
+
+router.use('/*', function (req, res, next) {
+    var token = req.query.token;
+    console.log(token);
+    if (_.isEqual(token, 'aa')) {
+        return next();
+    } else {
+        collectionDriver.getUserByToken(token, function (error, user) {
+            if (error) {
+                res.status(400).send(error);
+                return null;
+            }
+            return next();
+        });
+    }
+});
+
+router.get('/i1/:ticketId', function (req, res) {
     var ticketId = req.params.ticketId;
     console.log(ticketId);
     collectionDriver.makeTicketInvactive(ticketId, function (error, objs) {
@@ -66,7 +96,7 @@ app.get('/i1/:ticketId', function (req, res) {
 });
 
 
-app.get('/movies/filter/:pattern/field/:field/order/:order/pageSize/:pageSize', function (req, res) {
+router.get('/movies/filter/:pattern/field/:field/order/:order/pageSize/:pageSize', function (req, res) {
     var params = req.params;
     var pageSize = _.toInteger(params.pageSize) || 10;
     var order = params.order === 'asc' ? 1 : -1;
@@ -81,7 +111,7 @@ app.get('/movies/filter/:pattern/field/:field/order/:order/pageSize/:pageSize', 
     });
 });
 
-app.get('/movies/filter/:pattern', function (req, res) {
+router.get('/movies/filter/:pattern', function (req, res) {
     var pattern = req.params.pattern;
     if (pattern) {
         collectionDriver.getMoviesByPattern(pattern, function (error, objs) {
@@ -95,7 +125,7 @@ app.get('/movies/filter/:pattern', function (req, res) {
     }
 });
 
-app.get('/vendors/:vendorId/movies', function (req, res) {
+router.get('/vendors/:vendorId/movies', function (req, res) {
     var vendorId = req.params.vendorId;
     console.log(vendorId);
     if (vendorId) {
@@ -110,7 +140,7 @@ app.get('/vendors/:vendorId/movies', function (req, res) {
     }
 });
 
-app.get('/vendors/:vendorId/shows', function (req, res) {
+router.get('/vendors/:vendorId/shows', function (req, res) {
     var vendorId = req.params.vendorId;
     if (vendorId) {
         collectionDriver.getShowsByVendor(vendorId, function (error, objs) {
@@ -124,7 +154,7 @@ app.get('/vendors/:vendorId/shows', function (req, res) {
     }
 });
 
-app.get('/vendors/:vendorId/movies/:movieId/shows', function (req, res) {
+router.get('/vendors/:vendorId/movies/:movieId/shows', function (req, res) {
     var vendorId = req.params.vendorId;
     var movieId = req.params.movieId;
     if (vendorId) {
@@ -139,7 +169,7 @@ app.get('/vendors/:vendorId/movies/:movieId/shows', function (req, res) {
     }
 });
 
-app.get('/movies/:movieId/vendors', function (req, res) {
+router.get('/movies/:movieId/vendors', function (req, res) {
     var movieId = req.params.movieId;
     if (movieId) {
         collectionDriver.getVendorsByMovie(movieId, function (error, objs) {
@@ -153,7 +183,7 @@ app.get('/movies/:movieId/vendors', function (req, res) {
     }
 });
 
-app.get('/movies/:movieId/user/:userId/vendors', function (req, res) {
+router.get('/movies/:movieId/user/:userId/vendors', function (req, res) {
     var movieId = req.params.movieId;
     var userId = req.params.userId;
     if (movieId) {
@@ -168,7 +198,7 @@ app.get('/movies/:movieId/user/:userId/vendors', function (req, res) {
     }
 });
 
-app.get('/tickets/:ticketId', function (req, res) {
+router.get('/tickets/:ticketId', function (req, res) {
     var ticketId = req.params.ticketId;
     if (ticketId) {
         collectionDriver.getTicketById(ticketId, function (error, objs) {
@@ -182,7 +212,7 @@ app.get('/tickets/:ticketId', function (req, res) {
     }
 });
 
-app.get('/tickets/user/:userId', function (req, res) {
+router.get('/tickets/user/:userId', function (req, res) {
     var userId = req.params.userId;
     if (userId) {
         collectionDriver.getTicketsByUserId(userId, function (error, objs) {
@@ -197,7 +227,7 @@ app.get('/tickets/user/:userId', function (req, res) {
 });
 
 
-app.get('/vendors/:vendorId/MoviesWithShows', function (req, res) {
+router.get('/vendors/:vendorId/MoviesWithShows', function (req, res) {
     var vendorId = req.params.vendorId;
     if (vendorId) {
         collectionDriver.getShowMetaByVendor(vendorId, function (error, objs) {
@@ -211,7 +241,7 @@ app.get('/vendors/:vendorId/MoviesWithShows', function (req, res) {
     }
 });
 
-app.get('/users/filter/:pattern', function (req, res) {
+router.get('/users/filter/:pattern', function (req, res) {
     var pattern = req.params.pattern;
     if (pattern) {
         collectionDriver.getUsersByPattern(pattern, function (error, objs) {
@@ -225,7 +255,7 @@ app.get('/users/filter/:pattern', function (req, res) {
     }
 });
 
-app.get('/getUserByToken/:token', function (req, res) {
+router.get('/getUserByToken/:token', function (req, res) {
     collectionDriver.getUserByToken(req.params.token, function (error, objs) { //C
         if (error) {
             res.status(400).send(error);
@@ -237,7 +267,7 @@ app.get('/getUserByToken/:token', function (req, res) {
 });
 
 
-app.get('/:collection', function (req, res) {
+router.get('/:collection', function (req, res) {
     console.log('request');
     collectionDriver.findAll(req.params.collection, function (error, objs) { //C
         if (error) {
@@ -249,7 +279,7 @@ app.get('/:collection', function (req, res) {
     });
 });
 
-app.get('/:collection/:entity', function (req, res) {
+router.get('/:collection/:entity', function (req, res) {
     var params = req.params;
     var entity = params.entity;
     var collection = params.collection;
@@ -267,20 +297,7 @@ app.get('/:collection/:entity', function (req, res) {
 });
 
 
-app.post('/login', function (req, res) {
-    var resData = req.body;
-    console.log(resData);
-    collectionDriver.login(resData.user_name, resData.password, function (err, docs) {
-        if (err) {
-            console.log(err);
-            res.status(400).send(err);
-        } else {
-            res.send(201, docs);
-        }
-    });
-});
-
-app.post('/shows', function (req, res) {
+router.post('/shows', function (req, res) {
     var resData = req.body;
     var collection = 'shows';
     var objects = [];
@@ -310,7 +327,7 @@ app.post('/shows', function (req, res) {
 
 });
 
-app.post('/tickets', function (req, res) {
+router.post('/tickets', function (req, res) {
     var object = req.body;
     collectionDriver.createTickets(object, function (err, docs) {
         if (err) {
@@ -321,7 +338,7 @@ app.post('/tickets', function (req, res) {
     });
 });
 
-app.post('/getUsers', function (req, res) {
+router.post('/getUsers', function (req, res) {
     var userIds = req.body.ids;
     collectionDriver.getUsers(userIds, function (err, docs) {
         if (err) {
@@ -332,7 +349,7 @@ app.post('/getUsers', function (req, res) {
     });
 });
 
-app.post('/:collection', function (req, res) {
+router.post('/:collection', function (req, res) {
     var object = req.body;
     var collection = req.params.collection;
     console.log(collection);
@@ -345,7 +362,7 @@ app.post('/:collection', function (req, res) {
     });
 });
 
-app.put('/vendors/:vendorId/addBlacklist/:userId', function (req, res) {
+router.put('/vendors/:vendorId/addBlacklist/:userId', function (req, res) {
     var userId = req.params.userId;
     var vendorId = req.params.vendorId;
 
@@ -364,7 +381,7 @@ app.put('/vendors/:vendorId/addBlacklist/:userId', function (req, res) {
     }
 });
 
-app.put('/:collection/:entity', function (req, res) {
+router.put('/:collection/:entity', function (req, res) {
     var params = req.params;
     var entity = params.entity;
     var collection = params.collection;
@@ -384,7 +401,7 @@ app.put('/:collection/:entity', function (req, res) {
     }
 });
 
-app.delete('/vendors/:vendorId/removeBlacklist/:userId', function (req, res) {
+router.delete('/vendors/:vendorId/removeBlacklist/:userId', function (req, res) {
     var userId = req.params.userId;
     var vendorId = req.params.vendorId;
 
@@ -402,7 +419,7 @@ app.delete('/vendors/:vendorId/removeBlacklist/:userId', function (req, res) {
     }
 });
 
-app.delete('/deleteMovie/:movieId', function (req, res) {
+router.delete('/deleteMovie/:movieId', function (req, res) {
     var params = req.params;
     var movieId = params.movieId;
     var callback = function (err) {
@@ -430,7 +447,7 @@ app.delete('/deleteMovie/:movieId', function (req, res) {
 });
 
 
-app.delete('/:collection/:entity', function (req, res) {
+router.delete('/:collection/:entity', function (req, res) {
     var params = req.params;
     var entity = params.entity;
     var collection = params.collection;
@@ -511,6 +528,7 @@ var deleteTicketBusinessRules = function (collection, entity, callback) {
     }
 };
 
+app.use('/api', router);
 app.use(function (req, res) {
     res.render('404', {url: req.url});
 });

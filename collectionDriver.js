@@ -594,13 +594,17 @@ CollectionDriver.prototype.login = function (user_name, password, callback) {
 CollectionDriver.prototype.getUserByToken = function (token, callback) {
     var that = this;
     that.getCollection('users', function (error, the_collection) {
-        the_collection.findOne({token: ObjectID(token)}, {password: 0}, function (error, user) {
-            if (error) {
-                callback(error);
-            } else {
-                callback(null, user);
-            }
-        });
+        if (error || !the_collection) {
+            callback(_.defaults(error, {message: 'User not authorized'}));
+        } else {
+            the_collection.findOne({token: ObjectID(token)}, {password: 0}, function (error, user) {
+                if (error || _.isEmpty(user)) {
+                    callback(_.defaults(error, {message: 'User not authorized'}));
+                } else {
+                    callback(null, user);
+                }
+            });
+        }
     });
 
 };

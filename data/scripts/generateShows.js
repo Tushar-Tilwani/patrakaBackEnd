@@ -38,7 +38,7 @@ function generateShows(movieId, vendorId) {
         showsTimes: getRandom(showsTimes, 3),
         price: prices[_.random(prices.length - 1)],
         startDate: moment().format('MM-DD-YYYY'),
-        noOfDays: 8,
+        noOfDays: 12,
         movieId: movieId.str,
         vendorId: vendorId.str,
         ticketsAvailable: ticketsAvailable[_.random(ticketsAvailable.length - 1)],

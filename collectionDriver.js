@@ -288,7 +288,7 @@ CollectionDriver.prototype.getVendorsByMovie = function (movieId, callback) {
     });
 };
 
-//Removes blacklisted users
+//Removes blacklisted vendors
 CollectionDriver.prototype.getVendorsByMovieCorrected = function (movieId, userId, callback) {
     var that = this;
     that.getShowsByMovie(movieId, function (error, shows) {
@@ -299,15 +299,12 @@ CollectionDriver.prototype.getVendorsByMovieCorrected = function (movieId, userI
             that.getCollection('vendors', function (error, the_collection) {
                 if (error) callback(error);
                 else {
-                    var objIds = _.map(vendorIds, function (id) {
-                        return ObjectID(id);
-                    }, {});
-
                     var selection = {
-                        '_id': {'$in': objIds},
                         'blacklist': {
-                            $elemMatch: {
-                                $ne: userId
+                            "$not": {
+                                $elemMatch: {
+                                    $eq: userId
+                                }
                             }
                         }
                     };
@@ -595,7 +592,7 @@ CollectionDriver.prototype.getUserByToken = function (token, callback) {
     var that = this;
     that.getCollection('users', function (error, the_collection) {
         if (error || !the_collection) {
-            callback(_.defaults(error, {message: 'User not authorized'}));
+            callback(_.defaults(error, {message: 'Internal Server Error'}));
         } else {
             the_collection.findOne({token: ObjectID(token)}, {password: 0}, function (error, user) {
                 if (error || _.isEmpty(user)) {

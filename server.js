@@ -273,6 +273,16 @@ router.get('/getUserByToken/:token', function (req, res) {
 });
 
 
+router.get('/getGloballyBlacklistedUsers', function (req, res) {
+    collectionDriver.getGloballyBlacklistedUsers(function (error, objs) { //C
+        if (error) {
+            res.status(400).send(error);
+        } else {
+            res.status(200).send(objs);
+        }
+    });
+});
+
 router.get('/:collection', function (req, res) {
     console.log('request');
     collectionDriver.findAll(req.params.collection, function (error, objs) { //C
@@ -374,6 +384,25 @@ router.put('/vendors/:vendorId/addBlacklist/:userId', function (req, res) {
 
     if (userId && vendorId) {
         collectionDriver.addBlacklistUsers(vendorId, userId, function (error, objs) { //B
+            if (error) {
+                res.status(400).send(error);
+            }
+            else {
+                res.status(200).send(objs);
+            }
+        });
+    } else {
+        var error = {'message': 'Unknown Error'};
+        res.status(400).send(error);
+    }
+});
+
+
+router.put('/modifyGlobalBlacklistUsers/:userId/:isBlacklist', function (req, res) {
+    var userId = req.params.userId;
+    var isBlacklist = _.isEqual(req.params.isBlacklist, 'true');
+    if (userId) {
+        collectionDriver.modifyGlobalBlacklistUsers(userId, isBlacklist, function (error, objs) { //B
             if (error) {
                 res.status(400).send(error);
             }

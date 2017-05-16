@@ -507,9 +507,9 @@ CollectionDriver.prototype.addBlacklistUsers = function (vendorId, userId, callb
     });
 };
 
-CollectionDriver.prototype.removeBlacklistUsers = function (vendorId, userId, callback) {
+CollectionDriver.prototype.removeBlacklistUsers = function (userId, callback) {
     var that = this;
-    that.getCollection('vendors', function (error, the_collection) {
+    that.update('vendors', function (error, the_collection) {
         if (error) callback(error);
         else {
             var selection = {'_id': ObjectID(vendorId)};
@@ -521,6 +521,39 @@ CollectionDriver.prototype.removeBlacklistUsers = function (vendorId, userId, ca
         }
     });
 };
+
+
+CollectionDriver.prototype.modifyGlobalBlacklistUsers = function (userId, flag, callback) {
+    var that = this;
+    that.getCollection('users', function (error, the_collection) {
+        if (error) callback(error);
+        else {
+            var selection = {'_id': ObjectID(userId)};
+            var updateVal = {'$set': {'blacklist': flag}};
+            the_collection.update(selection, updateVal, function (error, result) {
+                if (error) callback(error);
+                else callback(null, result);
+            });
+        }
+    });
+};
+
+
+CollectionDriver.prototype.getGloballyBlacklistedUsers = function (callback) {
+    var that = this;
+    that.getCollection('users', function (error, the_collection) {
+        if (error) {
+            callback(error);
+        }
+        var selection = {'blacklist': true};
+        the_collection.find(selection, {password: 0, token: 0})
+            .toArray(function (error, results) {
+                if (error) callback(error);
+                else callback(null, results)
+            });
+    });
+};
+
 
 CollectionDriver.prototype.getUsersByPattern = function (pattern, callback) {
     var that = this;
@@ -595,6 +628,12 @@ function checkPasswordHash(clientPassword, databasePassword, callback) {
         });
 }
 
+function checkIfBlacklisted(user) {
+    if (user.blacklist) {
+
+    }
+}
+
 function assignToken(the_collection, user, token, callback) {
     the_collection.update({'_id': ObjectID(user._id)}, {
         $set: token
@@ -627,6 +666,8 @@ CollectionDriver.prototype.login = function (user_name, password, callback) {
         the_collection.findOne(selection, function (error, user) {
             if (error || _.isEmpty(user)) {
                 callback(_.assignIn(error, {message: 'Invalid Username'}));
+            } else if (user.blacklist) {
+                callback({message: 'You have been banned for you nefarious activities.'});
             } else {
                 checkPasswordHash(password, user.password, function (error) {
                     if (error) {

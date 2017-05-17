@@ -55,6 +55,29 @@ app.get('/hashit', function (req, res) {
     });
 });
 
+
+app.post('/registerUser', function (req, res) {
+    collectionDriver.registerUser(req.body, function (err, docs) {
+        if (err) {
+            res.status(400).send(err);
+        } else {
+            res.status(201).send(docs);
+        }
+    });
+});
+
+
+app.get('/checkUserName/:userName', function (req, res) {
+    console.log(req.params.userName);
+    collectionDriver.checkUserName(req.params.userName, function (err, docs) {
+        if (err) {
+            res.status(400).send(err);
+        } else {
+            res.status(201).send(docs);
+        }
+    });
+});
+
 router.get('', function (req, res) {
     res.send('<html><body><h1>Hello API</h1></body></html>');
 });
@@ -284,7 +307,6 @@ router.get('/getGloballyBlacklistedUsers', function (req, res) {
 });
 
 router.get('/:collection', function (req, res) {
-    console.log('request');
     collectionDriver.findAll(req.params.collection, function (error, objs) { //C
         if (error) {
             res.status(400).send(error);
@@ -360,20 +382,20 @@ router.post('/getUsers', function (req, res) {
         if (err) {
             res.status(400).send(err);
         } else {
-            res.send(201, docs);
+            res.status(201).send(docs);
         }
     });
 });
 
+
 router.post('/:collection', function (req, res) {
     var object = req.body;
     var collection = req.params.collection;
-    console.log(collection);
     collectionDriver.save(collection, object, function (err, docs) {
         if (err) {
             res.status(400).send(err);
         } else {
-            res.send(201, docs);
+            res.status(201).send(docs);
         }
     });
 });

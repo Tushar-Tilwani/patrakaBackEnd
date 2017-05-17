@@ -628,12 +628,6 @@ function checkPasswordHash(clientPassword, databasePassword, callback) {
         });
 }
 
-function checkIfBlacklisted(user) {
-    if (user.blacklist) {
-
-    }
-}
-
 function assignToken(the_collection, user, token, callback) {
     the_collection.update({'_id': ObjectID(user._id)}, {
         $set: token
@@ -667,7 +661,7 @@ CollectionDriver.prototype.login = function (user_name, password, callback) {
             if (error || _.isEmpty(user)) {
                 callback(_.assignIn(error, {message: 'Invalid Username'}));
             } else if (user.blacklist) {
-                callback({message: 'You have been banned for you nefarious activities.'});
+                callback({message: 'You have been banned for your nefarious activities.'});
             } else {
                 checkPasswordHash(password, user.password, function (error) {
                     if (error) {
@@ -698,6 +692,37 @@ CollectionDriver.prototype.getUserByToken = function (token, callback) {
         }
     });
 
+};
+
+CollectionDriver.prototype.checkUserName = function (user_name, callback) {
+    var that = this;
+    that.getCollection('users', function (error, the_collection) {
+        if (error || !the_collection) {
+            callback(_.defaults(error, {message: 'Internal Server Error'}));
+        } else {
+            the_collection.findOne({user_name: user_name}, {password: 0}, function (error, user) {
+                if (error) {
+                    callback(_.defaults(error, {message: 'Some Error'}));
+                } else {
+                    callback(null, user);
+                }
+            });
+        }
+    });
+};
+
+
+CollectionDriver.prototype.registerUser = function (userObj, callback) {
+    var that = this;
+    hash_salt.hash(userObj.password)
+        .then(function (result) {
+            userObj.password = {
+                salt: result.salt,
+                hash: result.salt
+            };
+            userObj.token = ObjectID();
+            that.save('users', userObj, callback);
+        });
 };
 
 // CollectionDriver.prototype.authenticateUser = function (user_name, password, callback) {

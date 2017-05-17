@@ -583,40 +583,6 @@ CollectionDriver.prototype.getUsersByPattern = function (pattern, callback) {
 };
 
 
-// var user = {};
-// pass.hash('my password', function (err, salt, hash) {
-//     user.salt = salt;
-//     user.hash = hash;
-//     console.log(user);
-// });
-
-
-// CollectionDriver.prototype.hashit = function (callback) {
-//     var that = this;
-//     that.findAll('users', function (error, users) {
-//         if (error) {
-//             callback(error);
-//         } else {
-//             _.forEach(users, function (user) {
-//                 hash_salt.hash('pass', function (err, salt, hash) {
-//                     user.password = {};
-//                     user.password.salt = salt;
-//                     user.password.hash = hash;
-//                     that.update('users', user, user._id, function (err, done) {
-//                         if (err) {
-//                             console.log(err);
-//                             return;
-//                         }
-//                         console.log(done);
-//                     });
-//                 });
-//             });
-//             callback(null, 'happy');
-//         }
-//     });
-// };
-
-
 function checkPasswordHash(clientPassword, databasePassword, callback) {
     hash_salt.hash(clientPassword, databasePassword.salt)
         .then(function (result) {
